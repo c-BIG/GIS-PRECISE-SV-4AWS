@@ -1,0 +1,13 @@
+{
+  "description": "Template for MergeBatchSites workflow",
+  "static_params": [],
+  "docker_params": [
+    "sv_pipeline_docker"
+  ],
+  "dynamic_params": {
+    "cohort": "{{cohort_id}}",
+    "pesr_vcfs": "{{query:ddb:output_paths:FilterBatchSamples:outlier_filtered_pesr_vcf:vcf.gz:glob}}",
+    "depth_vcfs": "{{query:ddb:output_paths:FilterBatchSamples:outlier_filtered_depth_vcf:vcf.gz:glob}}"
+  },
+  "optional_params": {}
+}

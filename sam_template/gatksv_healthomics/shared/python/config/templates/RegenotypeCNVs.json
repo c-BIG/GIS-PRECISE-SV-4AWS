@@ -1,0 +1,27 @@
+{
+  "description": "Template for RegenotypeCNVs workflow",
+  "static_params": [
+    "contig_list"
+  ],
+  "docker_params": [
+    "sv_pipeline_docker",
+    "sv_base_mini_docker"
+  ],
+  "dynamic_params": {
+    "cohort": "{{cohort_id}}",
+    "batches": "{{query:ddb:batches_in_cohort}}",
+    "cohort_depth_vcf": "{{query:ddb:output_paths:MergeBatchSites:cohort_depth_vcf:vcf.gz:glob:single}}",
+    "batch_depth_vcfs": "{{query:ddb:batch_outputs:FilterBatchSamples:outlier_filtered_depth_vcf:vcf.gz:glob}}",
+    "depth_vcfs": "{{query:ddb:batch_outputs:GenotypeBatch:genotyped_depth_vcf:vcf.gz:glob}}",
+    "depth_vcf_indexes": "{{query:ddb:batch_outputs:GenotypeBatch:genotyped_depth_vcf_index:tbi:glob}}",
+    "coveragefiles": "{{query:ddb:batch_outputs:GatherBatchEvidence:merged_bincov:txt.gz:glob}}",
+    "coveragefile_idxs": "{{query:ddb:batch_outputs:GatherBatchEvidence:merged_bincov_index:tbi:glob}}",
+    "medianfiles": "{{query:ddb:batch_outputs:GatherBatchEvidence:median_cov:bed:glob}}",
+    "RD_depth_sepcutoffs": "{{query:ddb:batch_outputs:GenotypeBatch:trained_genotype_depth_depth_sepcutoff:txt:glob}}",
+    "regeno_coverage_medians": "{{query:ddb:batch_outputs:GenotypeBatch:regeno_coverage_medians:bed.gz:glob}}"
+  },
+  "optional_params": {
+    "n_RdTest_bins": 100000,
+    "n_per_split": 5000
+  }
+}

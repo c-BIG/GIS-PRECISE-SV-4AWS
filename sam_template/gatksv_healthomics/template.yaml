@@ -1,0 +1,761 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  GATK-SV HealthOmics Workflow Orchestration (v1.1)
+  17 workflows, Lambda Layer config, no SSM dependencies
+
+Parameters:
+  Env:
+    Type: String
+  Owner:
+    Type: String
+  Vendor:
+    Type: String
+  TemplateVersion:
+    Type: String
+  EBBusName:
+    Type: String
+  CostTag:
+    Type: String
+  SNS2VendorArn:
+    Type: String
+  SNS2AggregatesArn:
+    Type: String
+  DynamoDBName:
+    Type: String
+    Default: 'gatk-sv-dev'
+  DynamoDBArn: 
+    Type: String
+    Description: DynamoDB table Arn
+    Default: 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-dev-sample'
+  DynamoDBStreamArn: 
+    Type: String
+    Description: DynamoDB Stream Arn
+    Default: 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-dev-sample/stream/<STREAM_TS>'
+  ### Batch/Cohort Aggregates Table Parameters (to be updated manually)
+  AggregatesDynamoDBName:
+    Type: String
+    Description: DynamoDB Name for GATK-SV batch and cohort processes
+    Default: 'gatk-sv-dev-batch-cohort'
+  AggregatesDynamoDBArn:
+    Type: String
+    Description: DynamoDB Arn for GATK-SV batch and cohort processes
+    Default: 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-dev-batch-cohort'
+  AggregatesDynamoDBStreamArn:
+    Type: String
+    Description: DynamoDB Stream Arn for GATK-SV batch and cohort processes
+    Default: 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-dev-batch-cohort/stream/<STREAM_TS>'  
+  CramBucketName:
+    Type: String
+  Byob:
+    Type: String
+  OutputBucketName:
+    Type: String
+  ByobOutput:
+    Type: String
+  ByobParameter:
+    Type: String
+  ByobConfig:
+    Type: String
+    Default: 'pipeline_config'
+    Description: 'S3 prefix for pipeline config files (templates, docker_images, genome_references, workflow_ids)'
+  KmsKeyArn:
+    Type: String
+    Default: ''
+    Description: 'KMS key ARN for S3 encryption (optional)'
+  HealthOmicsExecutionRole:
+    Type: String
+    Default: ''
+    Description: 'External HealthOmics execution role ARN (for dev/testing, leave empty for prod)'
+  HealthOmicsJsonSizeLimit:
+    Type: String
+    Default: '45000'
+    Description: 'HealthOmics Json input filesize limit'
+  ComputeBackend:
+    Type: String
+    Default: 'healthomics'
+  HealthOmicsCacheId:
+    Type: String
+    Description: HealthOmics run cache ID (shared across runs for task reuse). Change to reset cache.
+    Default: '2758152'
+  AwsCliLayerArn:
+    Type: String
+    Description: ARN of Lambda layer containing AWS CLI at /opt/bin/aws (required for HealthOmics start-run)
+    Default: ''
+  ConfigLayerS3Bucket:
+    Type: String
+    Description: S3 bucket containing the config Lambda layer zip
+    Default: '<your-bucket>'
+  ConfigLayerS3Key:
+    Type: String
+    Description: S3 key of the config Lambda layer zip
+    Default: 'lambda_layer/gatksv_config_layer.zip'
+
+Conditions:
+  HasKmsKey: !Not [!Equals [!Ref KmsKeyArn, '']]
+  HasAwsCliLayer: !Not [!Equals [!Ref AwsCliLayerArn, '']]
+  UseExternalRole: !Not [!Equals [!Ref HealthOmicsExecutionRole, '']]
+  CreateRoles: !Equals [!Ref HealthOmicsExecutionRole, '']
+  CreateSampleLambda: !Equals [!Ref ComputeBackend, 'healthomics']
+
+
+Globals:
+  Function:
+    Timeout: 300
+    MemorySize: 256
+    Runtime: python3.12
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        OWNER: !Ref Owner
+        ENV: !Ref Env
+        SNS_TOPIC_ARN: !Ref SNS2VendorArn
+        SNS_AGGREGATES_ARN: !Ref SNS2AggregatesArn
+        BATCH_CHECKER_SNS_ARN: !Ref SNSTopicBatchChecker
+        DDB_TABLE_NAME: !Ref DynamoDBName
+        AGGREGATES_TABLE_NAME: !Ref AggregatesDynamoDBName
+        OUTPUT_BUCKET: !Ref OutputBucketName
+        OUTPUT_PREFIX: !Ref ByobOutput
+        CONFIG_BUCKET: !Ref OutputBucketName
+        CONFIG_PREFIX: !Ref ByobConfig
+        SCHEDULER_ROLE_ARN: !GetAtt SchedulerRole.Arn
+        HEALTHOMICS_CACHE_ID: !Ref HealthOmicsCacheId
+    Tags:
+      Project: !Ref CostTag
+      Owner: !Ref Owner
+      Env: !Ref Env
+
+Resources:
+
+  # SNS Topic for Batch Checker Communication
+  SNSTopicBatchChecker:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${Owner}-${Vendor}-${Env}-gatksv-batch-checker'
+      DisplayName: 'GATK-SV Batch Checker Communication'
+      Tags:
+        - Key: Project
+          Value: !Ref CostTag
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Env
+          Value: !Ref Env
+
+  # HealthOmics Execution Role for Sample Workflows (needs CRAM input + output access)
+  HealthOmicsSampleExecutionRole:
+    Type: AWS::IAM::Role
+    Condition: CreateRoles
+    Properties:
+      RoleName: !Sub '${Owner}-${Vendor}-${Env}-gatksv-healthomics-sample-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: omics.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: HealthOmicsSamplePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: InputBucketRead
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:ListBucket
+                  - s3:GetObjectTagging
+                  - s3:GetBucketLocation
+                  - s3:ListBucketMultipartUploads
+                  - s3:ListMultipartUploadParts
+                Resource:
+                  - !Sub 'arn:aws:s3:::${CramBucketName}'
+                  - !Sub 'arn:aws:s3:::${CramBucketName}/${Byob}/*'
+              - Sid: OutputBucketReadWrite
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:ListBucket
+                  - s3:GetObjectTagging
+                  - s3:GetBucketLocation
+                  - s3:ListBucketMultipartUploads
+                  - s3:ListMultipartUploadParts
+                  - s3:PutObject
+                  - s3:PutObjectTagging
+                Resource:
+                  - !Sub 'arn:aws:s3:::${OutputBucketName}'
+                  - !Sub 'arn:aws:s3:::${OutputBucketName}/*'
+              - Sid: UpdateDDB
+                Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                  - dynamodb:PutItem
+                  - dynamodb:PartiQLUpdate
+                Resource: !Sub 'arn:aws:dynamodb:ap-southeast-1:${AWS::AccountId}:table/${DynamoDBName}'
+              - !If
+                - HasKmsKey
+                - Sid: KmsAccess
+                  Effect: Allow
+                  Action:
+                    - kms:Decrypt
+                    - kms:DescribeKey
+                    - kms:GenerateDataKey
+                  Resource: !Ref KmsKeyArn
+                - !Ref AWS::NoValue
+              - Sid: CloudWatchLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/omics/*'
+              - Sid: ECRAccess
+                Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                Resource: '*'
+      Tags:
+        - Key: Project
+          Value: !Ref CostTag
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Env
+          Value: !Ref Env
+
+  # HealthOmics Execution Role for Batch/Cohort Workflows (only output bucket access)
+  HealthOmicsBatchExecutionRole:
+    Type: AWS::IAM::Role
+    Condition: CreateRoles
+    Properties:
+      RoleName: !Sub '${Owner}-${Vendor}-${Env}-gatksv-healthomics-batch-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: omics.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: HealthOmicsBatchPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: OutputBucketReadWrite
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:ListBucket
+                  - s3:GetObjectTagging
+                  - s3:GetBucketLocation
+                  - s3:ListBucketMultipartUploads
+                  - s3:ListMultipartUploadParts
+                  - s3:PutObject
+                  - s3:PutObjectTagging
+                Resource:
+                  - !Sub 'arn:aws:s3:::${OutputBucketName}'
+                  - !Sub 'arn:aws:s3:::${OutputBucketName}/*'
+              - !If
+                - HasKmsKey
+                - Sid: KmsAccess
+                  Effect: Allow
+                  Action:
+                    - kms:Decrypt
+                    - kms:DescribeKey
+                    - kms:GenerateDataKey
+                  Resource: !Ref KmsKeyArn
+                - !Ref AWS::NoValue
+              - Sid: CloudWatchLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/omics/*'
+              - Sid: ECRAccess
+                Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                Resource: '*'
+      Tags:
+        - Key: Project
+          Value: !Ref CostTag
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Env
+          Value: !Ref Env
+
+  # IAM role for EventBridge Scheduler to publish to SNS
+  SchedulerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${Owner}-${Vendor}-${Env}-gatksv-scheduler-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: scheduler.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SchedulerSNSPublish
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !Ref SNS2VendorArn
+      Tags:
+        - Key: Project
+          Value: !Ref CostTag
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Env
+          Value: !Ref Env
+
+  # Shared IAM role for all Lambda functions
+  GatkSvLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${Owner}-${Vendor}-${Env}-gatksv-lambda-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: GatkSvLambdaPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: HealthOmicsAccess
+                Effect: Allow
+                Action:
+                  - omics:StartRun
+                  - omics:GetRun
+                  - omics:ListRuns
+                  - omics:TagResource
+                Resource: '*'
+              - Sid: PassHealthOmicsRole
+                Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource: !If
+                  - UseExternalRole
+                  - !Ref HealthOmicsExecutionRole
+                  - - !GetAtt HealthOmicsSampleExecutionRole.Arn
+                    - !GetAtt HealthOmicsBatchExecutionRole.Arn
+              - Sid: SNSPublish
+                Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: 
+                  - !Ref SNS2VendorArn
+                  - !Ref SNS2AggregatesArn
+                  - !Ref SNSTopicBatchChecker
+              - Sid: DynamoDBReadOnly
+                Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                  - dynamodb:BatchGetItem
+                  - dynamodb:DescribeTable
+                  - dynamodb:Scan
+                Resource:
+                  - !Ref DynamoDBArn 
+                  - !Sub '${DynamoDBArn}/index/*'
+                  - !Ref AggregatesDynamoDBArn 
+                  - !Sub '${AggregatesDynamoDBArn}/index/*'
+              - Sid: DynamoDBUpdateAggregates
+                Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                Resource:
+                  - !Ref AggregatesDynamoDBArn
+              - Sid: EventBridgeScheduler
+                Effect: Allow
+                Action:
+                  - scheduler:CreateSchedule
+                  - scheduler:DeleteSchedule
+                  - scheduler:GetSchedule
+                Resource: !Sub 'arn:aws:scheduler:${AWS::Region}:${AWS::AccountId}:schedule/default/retry-*'
+              - Sid: S3ReadOutputJson
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:ListBucket
+                  - s3:GetObjectTagging
+                  - s3:GetBucketLocation
+                  - s3:ListBucketMultipartUploads
+                  - s3:ListMultipartUploadParts
+                  - s3:PutObject
+                  - s3:PutObjectTagging
+                Resource:
+                  - !Sub 'arn:aws:s3:::${OutputBucketName}'
+                  - !Sub 'arn:aws:s3:::${OutputBucketName}/qc_outputs/*'
+                  - !Sub 'arn:aws:s3:::${OutputBucketName}/${ByobOutput}/*'
+                  - !Sub 'arn:aws:s3:::${OutputBucketName}/${ByobParameter}/*'
+                  - !Sub 'arn:aws:s3:::${OutputBucketName}/${ByobConfig}/*'
+              - Sid: S3ReadInputBucket
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub 'arn:aws:s3:::${CramBucketName}'
+                  - !Sub 'arn:aws:s3:::${CramBucketName}/${Byob}/*'
+              - !If
+                - HasKmsKey
+                - Sid: KmsAccess
+                  Effect: Allow
+                  Action:
+                    - kms:Decrypt
+                    - kms:DescribeKey
+                    - kms:GenerateDataKey
+                  Resource: !Ref KmsKeyArn
+                - !Ref AWS::NoValue
+      Tags:
+        - Key: Project
+          Value: !Ref CostTag
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Env
+          Value: !Ref Env
+
+  # Shared config layer for all Lambda functions
+  GatkSvConfigLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub '${Owner}-${Vendor}-${Env}-gatksv-config'
+      Description: Shared GATK-SV configuration (genome refs, docker images, templates)
+      ContentUri:
+        Bucket: !Ref ConfigLayerS3Bucket
+        Key: !Ref ConfigLayerS3Key
+      CompatibleRuntimes:
+        - python3.12
+      RetentionPolicy: Delete
+    Metadata:
+      BuildMethod: python3.12
+
+  # Lambda: Submit sample-level workflows
+  SubmitSampleWorkflowFunction:
+    Type: AWS::Serverless::Function
+    Condition: CreateSampleLambda
+    Properties:
+      FunctionName: !Sub '${Owner}-${Vendor}-${Env}-gatksv-submit-sample-workflow'
+      CodeUri: functions/submit_workflow/
+      Handler: app.lambda_handler
+      Role: !GetAtt GatkSvLambdaRole.Arn
+      Timeout: 600
+      ReservedConcurrentExecutions: 50
+      Layers:
+        - !Ref GatkSvConfigLayer
+        - !If [HasAwsCliLayer, !Ref AwsCliLayerArn, !Ref "AWS::NoValue"]
+      Environment:
+        Variables:
+          HEALTHOMICS_ROLE_ARN: !If
+            - UseExternalRole
+            - !Ref HealthOmicsExecutionRole
+            - !GetAtt HealthOmicsSampleExecutionRole.Arn
+          OUTPUT_BUCKET: !Ref OutputBucketName
+          OUTPUT_PREFIX: !Ref ByobOutput
+          PARAMETER_PREFIX: !Ref ByobParameter
+          COST_TAG: !Ref CostTag
+          OWNER: !Ref Owner
+          ENV: !Ref Env
+      Events:
+        GatherSampleEvidence:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: !Ref EBBusName
+            Pattern:
+              detail:
+                eventName:
+                  - INSERT
+                dynamodb:
+                  NewImage:
+                    pk:
+                      S:
+                        - prefix: "SAMPLE#"
+                    Event:
+                      S:
+                        - GatherSampleEvidence
+                    Status:
+                      S:
+                        - PENDING
+
+  # Lambda: Submit batch-level workflows
+  SubmitBatchWorkflowFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${Owner}-${Vendor}-${Env}-gatksv-submit-batch-workflow'
+      CodeUri: functions/submit_batch_workflow/
+      Handler: app.lambda_handler
+      Timeout: 600
+      Role: !GetAtt GatkSvLambdaRole.Arn
+      Layers:
+        - !Ref GatkSvConfigLayer
+        - !If [HasAwsCliLayer, !Ref AwsCliLayerArn, !Ref "AWS::NoValue"]
+      Environment:
+        Variables:
+          HEALTHOMICS_ROLE_ARN: !If
+            - UseExternalRole
+            - !Ref HealthOmicsExecutionRole
+            - !GetAtt HealthOmicsBatchExecutionRole.Arn
+          OUTPUT_BUCKET: !Ref OutputBucketName
+          OUTPUT_PREFIX: !Ref ByobOutput
+          PARAMETER_PREFIX: !Ref ByobParameter
+          HEALTHOMICS_PARAMETER_SIZE_LIMIT: !Ref HealthOmicsJsonSizeLimit
+          COST_TAG: !Ref CostTag
+          OWNER: !Ref Owner
+          ENV: !Ref Env
+      Events:
+        BatchWorkflows:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: !Ref EBBusName
+            Pattern:
+              detail:
+                eventName:
+                  - INSERT
+                  - MODIFY
+                dynamodb:
+                  NewImage:
+                    pk:
+                      S:
+                        - prefix: "BATCH#"
+                    Event:
+                      S:
+                        - EvidenceQC
+                        - TrainGCNV
+                        - GatherBatchEvidence
+                        - ClusterBatch
+                        - GenerateBatchMetrics
+                        - FilterBatchSites
+                        - FilterBatchSamples
+                    Status:
+                      S:
+                        - PENDING
+
+  # Lambda: Submit cohort-level workflows
+  SubmitCohortWorkflowFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${Owner}-${Vendor}-${Env}-gatksv-submit-cohort-workflow'
+      CodeUri: functions/submit_cohort_workflow/
+      Handler: app.lambda_handler
+      Timeout: 600
+      Role: !GetAtt GatkSvLambdaRole.Arn
+      Layers:
+        - !Ref GatkSvConfigLayer
+        - !If [HasAwsCliLayer, !Ref AwsCliLayerArn, !Ref "AWS::NoValue"]
+      Environment:
+        Variables:
+          HEALTHOMICS_ROLE_ARN: !If
+            - UseExternalRole
+            - !Ref HealthOmicsExecutionRole
+            - !GetAtt HealthOmicsBatchExecutionRole.Arn
+          OUTPUT_BUCKET: !Ref OutputBucketName
+          OUTPUT_PREFIX: !Ref ByobOutput
+          PARAMETER_PREFIX: !Ref ByobParameter
+          COST_TAG: !Ref CostTag
+          OWNER: !Ref Owner
+          ENV: !Ref Env
+      Events:
+        CohortWorkflows:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: !Ref EBBusName
+            Pattern:
+              detail:
+                eventName:
+                  - INSERT
+                  - MODIFY
+                dynamodb:
+                  NewImage:
+                    pk:
+                      S:
+                        - prefix: "COHORT#"
+                    Event:
+                      S:
+                        - MergeBatchSites
+                        - GenotypeBatch
+                        - RegenotypeCNVs
+                        - MakeCohortVcf
+                        - RefineComplexVariants
+                        - JoinRawCalls
+                        - SVConcordance
+                        - FilterGenotypes
+                        - AnnotateVcf
+                    Status:
+                      S:
+                        - PENDING
+
+  # Lambda: Check batch readiness and trigger EvidenceQC
+  BatchReadinessCheckerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${Owner}-${Vendor}-${Env}-gatksv-batch-readiness-checker'
+      CodeUri: functions/batch_readiness_checker/
+      Handler: app.lambda_handler
+      Role: !GetAtt GatkSvLambdaRole.Arn
+      Timeout: 300
+      Layers:
+        - !Ref GatkSvConfigLayer
+      Environment:
+        Variables:
+          SNS_AGGREGATES_ARN: !Ref SNS2AggregatesArn
+          AGGREGATES_TABLE_NAME: !Ref AggregatesDynamoDBName
+          DDB_TABLE_NAME: !Ref DynamoDBName
+      Events:
+        BatchCheckerSNS:
+          Type: SNS
+          Properties:
+            Topic: !Ref SNSTopicBatchChecker
+
+  # Lambda: Monitor HealthOmics run completion/failure
+  HealthOmicsStatusMonitorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${Owner}-${Vendor}-${Env}-gatksv-healthomics-status-monitor'
+      CodeUri: functions/healthomics_status_monitor/
+      Handler: app.lambda_handler
+      Role: !GetAtt GatkSvLambdaRole.Arn
+      Timeout: 120
+      Environment:
+        Variables:
+          SNS_SAMPLE_ARN: !Ref SNS2VendorArn
+          SNS_AGGREGATES_ARN: !Ref SNS2AggregatesArn
+          BATCH_CHECKER_SNS_ARN: !Ref SNSTopicBatchChecker
+          DDB_TABLE_NAME: !Ref DynamoDBName
+          AGGREGATES_TABLE_NAME: !Ref AggregatesDynamoDBName
+      Events:
+        HealthOmicsRunCompleted:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              source:
+                - aws.omics
+              detail-type:
+                - "Run Status Change"
+              detail:
+                status:
+                  - COMPLETED
+                  - FAILED
+                  - CANCELLED
+                runName:
+                    - prefix: !Sub "${Env}-GatherSampleEvidence-"
+                    - prefix: !Sub "${Env}-EvidenceQC-"
+                    - prefix: !Sub "${Env}-TrainGCNV-"
+                    - prefix: !Sub "${Env}-GatherBatchEvidence-"
+                    - prefix: !Sub "${Env}-ClusterBatch-"
+                    - prefix: !Sub "${Env}-GenerateBatchMetrics-"
+                    - prefix: !Sub "${Env}-FilterBatchSites-"
+                    - prefix: !Sub "${Env}-FilterBatchSamples-"
+                    - prefix: !Sub "${Env}-GenotypeBatch-"
+                    - prefix: !Sub "${Env}-MergeBatchSites-"
+                    - prefix: !Sub "${Env}-RegenotypeCNVs-"
+                    - prefix: !Sub "${Env}-MakeCohortVcf-"
+                    - prefix: !Sub "${Env}-JoinRawCalls-"
+                    - prefix: !Sub "${Env}-RefineComplexVariants-"
+                    - prefix: !Sub "${Env}-SVConcordance-"
+                    - prefix: !Sub "${Env}-FilterGenotypes-"
+                    - prefix: !Sub "${Env}-AnnotateVcf-"
+
+  # Stage Advancer — triggers next pipeline stage when DDB record shows COMPLETED
+  # Decoupled from StatusMonitor: enables manual triggering via DDB update
+  StageAdvancerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${Owner}-${Vendor}-${Env}-gatksv-stage-advancer'
+      CodeUri: functions/stage_advancer/
+      Handler: app.lambda_handler
+      Role: !GetAtt GatkSvLambdaRole.Arn
+      Timeout: 120
+      Environment:
+        Variables:
+          SNS_AGGREGATES_ARN: !Ref SNS2AggregatesArn
+          AGGREGATES_TABLE_NAME: !Ref AggregatesDynamoDBName
+          OUTPUT_BUCKET: !Ref OutputBucketName
+      Events:
+        AggregatesCompleted:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: !Ref EBBusName
+            Pattern:
+              detail:
+                eventName:
+                  - INSERT
+                  - MODIFY
+                dynamodb:
+                  NewImage:
+                    Status:
+                      S:
+                        - COMPLETED
+
+Outputs:
+  HealthOmicsSampleExecutionRoleArn:
+    Description: ARN of HealthOmics execution role for sample workflows
+    Value: !If
+      - UseExternalRole
+      - !Ref HealthOmicsExecutionRole
+      - !GetAtt HealthOmicsSampleExecutionRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-SampleRoleArn'
+  
+  HealthOmicsBatchExecutionRoleArn:
+    Description: ARN of HealthOmics execution role for batch/cohort workflows
+    Value: !If
+      - UseExternalRole
+      - !Ref HealthOmicsExecutionRole
+      - !GetAtt HealthOmicsBatchExecutionRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-BatchRoleArn'
+  
+  GatkSvLambdaRoleArn:
+    Description: ARN of shared Lambda execution role
+    Value: !GetAtt GatkSvLambdaRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-LambdaRoleArn'
+  
+  SubmitSampleWorkflowFunctionArn:
+    Condition: CreateSampleLambda
+    Description: ARN of sample workflow submission Lambda
+    Value: !GetAtt SubmitSampleWorkflowFunction.Arn
+  
+  SubmitBatchWorkflowFunctionArn:
+    Description: ARN of batch workflow submission Lambda
+    Value: !GetAtt SubmitBatchWorkflowFunction.Arn
+  
+  SubmitCohortWorkflowFunctionArn:
+    Description: ARN of cohort workflow submission Lambda
+    Value: !GetAtt SubmitCohortWorkflowFunction.Arn
+  
+  HealthOmicsStatusMonitorFunctionArn:
+    Description: ARN of HealthOmics status monitor Lambda
+    Value: !GetAtt HealthOmicsStatusMonitorFunction.Arn
+  
+  SNSTopicBatchCheckerArn:
+    Description: ARN of SNS topic for batch checker communication
+    Value: !Ref SNSTopicBatchChecker
+    Export:
+      Name: !Sub '${AWS::StackName}-BatchCheckerSNSArn'
+  
+  GatkSvConfigLayerArn:
+    Description: ARN of GATK-SV config Lambda Layer
+    Value: !Ref GatkSvConfigLayer

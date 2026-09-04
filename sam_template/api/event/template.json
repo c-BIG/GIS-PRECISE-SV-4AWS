@@ -1,0 +1,10 @@
+{
+    "PK": "SAMPLE#",
+    "SK": "EVENT#",
+    "SampleId": "SampleId",
+    "Event": "Event",
+    "Origin": "Origin",
+    "Process": "Process",
+    "Info": "Info",
+    "ProcessVersion": "ProcessVersion"
+}

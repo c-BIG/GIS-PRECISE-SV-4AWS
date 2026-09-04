@@ -1,0 +1,76 @@
+{
+  "GatherSampleEvidence": {
+    "id": "PLACEHOLDER_WORKFLOW_ID",
+    "version": null
+  },
+  "EvidenceQC": {
+    "id": "PLACEHOLDER_WORKFLOW_ID",
+    "version": null
+  },
+  "TrainGCNV": {
+    "id": "PLACEHOLDER_WORKFLOW_ID",
+    "version": null
+  },
+  "GatherBatchEvidence": {
+    "id": "PLACEHOLDER_WORKFLOW_ID",
+    "version": null
+  },
+  "ClusterBatch": {
+    "id": "PLACEHOLDER_WORKFLOW_ID",
+    "version": null
+  },
+  "GenerateBatchMetrics": {
+    "id": "PLACEHOLDER_WORKFLOW_ID",
+    "version": null
+  },
+  "FilterBatch": {
+    "id": "PLACEHOLDER_WORKFLOW_ID",
+    "version": null
+  },
+  "FilterBatchSites": {
+    "id": "PLACEHOLDER_WORKFLOW_ID",
+    "version": null,
+    "note": "Same as FilterBatch"
+  },
+  "FilterBatchSamples": {
+    "id": "PLACEHOLDER_WORKFLOW_ID",
+    "version": null,
+    "note": "Same as FilterBatch"
+  },
+  "GenotypeBatch": {
+    "id": "PLACEHOLDER_WORKFLOW_ID",
+    "version": null
+  },
+  "RegenotypeCNVs": {
+    "id": "PLACEHOLDER_WORKFLOW_ID",
+    "version": null
+  },
+  "MergeBatchSites": {
+    "id": "PLACEHOLDER_WORKFLOW_ID",
+    "version": null
+  },
+  "JoinRawCalls": {
+    "id": "PLACEHOLDER_WORKFLOW_ID",
+    "version": null
+  },
+  "MakeCohortVcf": {
+    "id": "PLACEHOLDER_WORKFLOW_ID",
+    "version": null
+  },
+  "RefineComplexVariants": {
+    "id": "PLACEHOLDER_WORKFLOW_ID",
+    "version": null
+  },
+  "SVConcordance": {
+    "id": "PLACEHOLDER_WORKFLOW_ID",
+    "version": null
+  },
+  "FilterGenotypes": {
+    "id": "PLACEHOLDER_WORKFLOW_ID",
+    "version": null
+  },
+  "AnnotateVcf": {
+    "id": "PLACEHOLDER_WORKFLOW_ID",
+    "version": null
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "description": "Template for SVConcordance workflow",
+  "static_params": [
+    "reference_dict",
+    "contig_list"
+  ],
+  "docker_params": [
+    "gatk_docker",
+    "sv_base_mini_docker"
+  ],
+  "dynamic_params": {
+    "output_prefix": "{{cohort_id}}",
+    "eval_vcf": "{{query:ddb:output_paths:RefineComplexVariants:cpx_refined_vcf:vcf.gz:glob:single}}",
+    "eval_vcf_index": "{{query:ddb:output_paths:RefineComplexVariants:cpx_refined_vcf_index:tbi:glob:single}}",
+    "truth_vcf": "{{query:ddb:output_paths:JoinRawCalls:joined_raw_calls_vcf:vcf.gz:glob:single}}",
+    "truth_vcf_index": "{{query:ddb:output_paths:JoinRawCalls:joined_raw_calls_vcf_index:tbi:glob:single}}"
+  },
+  "optional_params": {}
+}

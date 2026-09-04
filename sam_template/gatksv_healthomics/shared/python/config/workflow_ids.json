@@ -1,0 +1,88 @@
+{
+  "GatherSampleEvidence_ORIGINAL": {
+    "id": "3955139",
+    "version": null
+  },
+  "GatherSampleEvidence_DRAGEN44_MELTv222": {
+    "id": "5247721",
+    "version": null
+  },
+  "GatherSampleEvidence_DRAGEN44_MELTv222_CollectSVEvidence8GB": {
+    "id": "7381936",
+    "version": null
+  },
+  "GatherSampleEvidence": {
+    "id": "7381936",
+    "version": null
+  },
+  "EvidenceQC": {
+    "id": "3991202",
+    "version": null
+  },
+  "TrainGCNV": {
+    "id": "7500288",
+    "version": null
+  },
+  "GatherBatchEvidence": {
+    "id": "6324273",
+    "version": null
+  },
+  "ClusterBatch": {
+    "id": "6238049",
+    "version": null
+  },
+  "GenerateBatchMetrics": {
+    "id": "4548804",
+    "version": null
+  },
+  "FilterBatch": {
+    "id": "2760168",
+    "version": null
+  },
+  "FilterBatchSites": {
+    "id": "6397463",
+    "version": null,
+    "note": "Same as FilterBatch"
+  },
+  "FilterBatchSamples": {
+    "id": "8807638",
+    "version": null,
+    "note": "Same as FilterBatch"
+  },
+  "MergeBatchSites": {
+    "id": "4571309",
+    "version": null
+  },
+  "GenotypeBatch": {
+    "id": "4932051",
+    "version": null
+  },
+  "RegenotypeCNVs": {
+    "id": "7013143",
+    "version": null
+  },
+  "MakeCohortVcf": {
+    "id": "8156627",
+    "version": null
+  },
+  "RefineComplexVariants": {
+    "id": "4792008",
+    "version": null
+  },
+  "JoinRawCalls": {
+    "id": "8561886",
+    "version": null
+  },
+  "SVConcordance": {
+    "id": "1454155",
+    "version": null
+  },
+  "FilterGenotypes": {
+    "id": "5338731",
+    "version": null
+  },
+  "AnnotateVcf": {
+    "id": "6553914",
+    "version": null
+  }
+}

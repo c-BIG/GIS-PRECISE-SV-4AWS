@@ -1,0 +1,60 @@
+{
+  "description": "Template for MakeCohortVcf workflow",
+  "static_params": [
+    "reference_fasta",
+    "reference_fasta_fai",
+    "reference_dict",
+    "primary_contigs_list",
+    "contig_list",
+    "allosome_fai",
+    "cytobands",
+    "cytobands_idx",
+    "mei_bed",
+    "pe_exclude_list",
+    "pe_exclude_list_idx",
+    "HERVK_reference",
+    "LINE1_reference",
+    "bin_exclude",
+    "chr_x",
+    "chr_y",
+    "clustering_config_part1",
+    "stratification_config_part1",
+    "clustering_config_part2",
+    "stratification_config_part2",
+    "track_bed_files",
+    "track_names"
+  ],
+  "docker_params": [
+    "sv_pipeline_docker",
+    "sv_base_mini_docker",
+    "sv_pipeline_qc_docker",
+    "linux_docker",
+    "gatk_docker",
+	"manifest_reader_docker"
+  ],
+  "dynamic_params": {
+    "cohort_name": "{{cohort_id}}",
+    "ped_file": "{{ped_file}}",
+    "batches": "{{query:ddb:batches_in_cohort}}",
+    "pesr_vcfs": "{{query:ddb:batch_outputs:GenotypeBatch:genotyped_pesr_vcf:vcf.gz:glob}}",
+    "depth_vcfs": "{{query:ddb:batch_outputs:RegenotypeCNVs:regenotyped_depth_vcfs:vcf.gz:glob}}",
+    "disc_files": "{{query:ddb:batch_outputs:GatherBatchEvidence:merged_PE:txt.gz:glob}}",
+    "disc_files_idx": "{{query:ddb:batch_outputs:GatherBatchEvidence:merged_PE_index:tbi:glob}}",
+    "bincov_files": "{{query:ddb:batch_outputs:GatherBatchEvidence:merged_bincov:txt.gz:glob}}",
+    "bincov_files_idx": "{{query:ddb:batch_outputs:GatherBatchEvidence:merged_bincov_index:tbi:glob}}",
+    "median_coverage_files": "{{query:ddb:batch_outputs:GatherBatchEvidence:median_cov:bed:glob}}",
+    "raw_sr_bothside_pass_files": "{{query:ddb:batch_outputs:GenotypeBatch:sr_bothside_pass:txt:glob}}",
+    "raw_sr_background_fail_files": "{{query:ddb:batch_outputs:GenotypeBatch:sr_background_fail:txt:glob}}",
+    "depth_gt_rd_sep_files": "{{query:ddb:batch_outputs:GenotypeBatch:trained_genotype_depth_depth_sepcutoff:txt:glob}}",
+    "rf_cutoff_files": "{{query:ddb:batch_outputs:FilterBatchSites:cutoffs:cutoffs:glob}}"
+  },
+  "optional_params": {
+    "clean_vcf1b_records_per_shard": 10000,
+    "clean_vcf5_records_per_shard": 5000,
+    "min_sr_background_fail_batches": 0.5,
+    "max_shards_per_chrom_clean_vcf_step1": 200,
+    "max_shard_size_resolve": 500,
+    "samples_per_clean_vcf_step2_shard": 100,
+    "min_records_per_shard_clean_vcf_step1": 5000
+  }
+}

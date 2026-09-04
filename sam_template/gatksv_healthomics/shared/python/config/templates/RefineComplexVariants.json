@@ -1,0 +1,22 @@
+{
+  "description": "Template for RefineComplexVariants workflow",
+  "static_params": [],
+  "docker_params": [
+    "sv_pipeline_docker",
+    "sv_base_mini_docker",
+    "linux_docker"
+  ],
+  "dynamic_params": {
+    "prefix": "{{cohort_id}}",
+    "vcf": "{{query:ddb:output_paths:MakeCohortVcf:vcf:vcf.gz:glob:single}}",
+    "batch_name_list": "{{query:ddb:batches_in_cohort}}",
+    "batch_sample_lists": "{{query:ddb:batch_outputs:FilterBatchSamples:filtered_batch_samples_file:list:glob}}",
+    "PE_metrics": "{{query:ddb:batch_outputs:GatherBatchEvidence:merged_PE:txt.gz:glob}}",
+    "PE_metrics_indexes": "{{query:ddb:batch_outputs:GatherBatchEvidence:merged_PE_index:tbi:glob}}",
+    "Depth_DEL_beds": "{{query:ddb:batch_outputs:GatherBatchEvidence:merged_dels:bed.gz:glob}}",
+    "Depth_DUP_beds": "{{query:ddb:batch_outputs:GatherBatchEvidence:merged_dups:bed.gz:glob}}"
+  },
+  "optional_params": {
+    "n_per_split": 15000
+  }
+}

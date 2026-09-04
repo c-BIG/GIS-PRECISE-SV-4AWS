@@ -1,0 +1,26 @@
+{
+  "description": "Template for FilterBatchSites workflow - site-level filtering and SV count plot generation",
+  "static_params": [],
+  "docker_params": [
+    "sv_pipeline_docker"
+  ],
+  "dynamic_params": {
+    "batch": "{{batch_id}}",
+    "evidence_metrics": "{{query:ddb:output_paths:GenerateBatchMetrics:metrics:metrics:glob:single}}",
+    "evidence_metrics_common": "{{query:ddb:output_paths:GenerateBatchMetrics:metrics_common:metrics:glob:single}}",
+    "depth_vcf": "{{query:ddb:output_paths:ClusterBatch:clustered_depth_vcf:vcf.gz:glob:single}}",
+    "dragen_vcf": "{{query:ddb:output_paths:ClusterBatch:clustered_dragen_vcf:vcf.gz:glob:single}}",
+    "manta_vcf": "{{query:ddb:output_paths:ClusterBatch:clustered_manta_vcf:vcf.gz:glob:single}}",
+    "melt_vcf": "{{query:ddb:output_paths:ClusterBatch:clustered_melt_vcf:vcf.gz:glob:single}}",
+    "wham_vcf": "{{query:ddb:output_paths:ClusterBatch:clustered_wham_vcf:vcf.gz:glob:single}}",
+    "scramble_vcf": "{{query:ddb:output_paths:ClusterBatch:clustered_scramble_vcf:vcf.gz:glob:single}}"
+  },
+  "optional_params": {
+    "N_IQR_cutoff_plotting": 6
+  },
+  "optional_file_params": [
+    "adjudicate_cutoffs",
+    "adjudicate_scores",
+    "adjudicate_rf_files"
+  ]
+}

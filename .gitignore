@@ -1,0 +1,26 @@
+# Personal working log (not for the public repo)
+REPO_CLEANUP.md
+
+# Build artifacts
+*.zip
+*.bak
+*.bak_*
+*.orig
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# SAM / CloudFormation build output
+.aws-sam/
+packaged.yaml
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+*.swp

@@ -1,0 +1,69 @@
+# SAM CLI config for GATK-SV HealthOmics.
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-config.html
+#
+# parameter_overrides is written as a TOML array (one "Key=Value" per line) for readability.
+# Replace the placeholder values with those produced by scripts/setup/ (see SETUP_GUIDE.md).
+version = 0.1
+
+[default]
+
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.validate.parameters]
+lint = true
+
+# ============================================================
+# Example deploy profile — copy & rename for each environment
+# ============================================================
+[gatksv-dev-healthomics.deploy.parameters]
+stack_name = "gatksv-dev-healthomics"
+resolve_s3 = true
+s3_prefix = "gatksv-dev-healthomics"
+profile = "<aws-profile>"
+confirm_changeset = true
+capabilities = "CAPABILITY_AUTO_EXPAND CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+image_repositories = []
+parameter_overrides = [
+    # --- Identity / tagging ---
+    "TemplateVersion=v1.0",
+    "Env=dev",
+    "Vendor=ilmn",
+    "Owner=<group-name>",
+    "CostTag=gatksv-healthomics",
+
+    # --- DynamoDB (from scripts/setup/02_create_dynamodb.sh) ---
+    "DynamoDBName=<sample-table>",
+    "DynamoDBArn=arn:aws:dynamodb:<region>:<account>:table/<sample-table>",
+    "DynamoDBStreamArn=arn:aws:dynamodb:<region>:<account>:table/<sample-table>/stream/<ts>",
+    "AggregatesDynamoDBName=<batch-cohort-table>",
+    "AggregatesDynamoDBArn=arn:aws:dynamodb:<region>:<account>:table/<batch-cohort-table>",
+    "AggregatesDynamoDBStreamArn=arn:aws:dynamodb:<region>:<account>:table/<batch-cohort-table>/stream/<ts>",
+
+    # --- Access / buckets ---
+    "UserArn=arn:aws:iam::<account>:user/<user>",
+    "CramBucketName=<cram-bucket>",
+    "Byob=<cram-prefix>",
+    "OutputBucketName=<output-bucket>",
+    "ByobOutput=<output-prefix>",
+    "ByobParameter=<parameter-prefix>",
+    "ByobConfig=pipeline_config",
+
+    # --- HealthOmics ---
+    "HealthOmicsExecutionRole=arn:aws:iam::<account>:role/<ho-exec-role>",
+    "HealthOmicsJsonSizeLimit=45000",
+    "HealthOmicsCacheId=<cache-id>",
+
+    # --- Layers (from scripts/setup/05 + 09) ---
+    "AwsCliLayerArn=arn:aws:lambda:<region>:<account>:layer:awscli:1",
+    "ConfigLayerS3Bucket=<config-bucket>",
+    "ConfigLayerS3Key=lambda_layer/gatksv_config_layer.zip",
+
+    # --- Optional ---
+    "KmsKeyArn=",
+    "ComputeBackend=healthomics",
+]
+
+[gatksv-dev-healthomics.global.parameters]
+region = "ap-southeast-1"

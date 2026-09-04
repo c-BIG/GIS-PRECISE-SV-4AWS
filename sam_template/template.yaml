@@ -1,0 +1,637 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  GATK-SV on AWS
+
+  Sample SAM Template for GATK-SV
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 300
+    MemorySize: 128
+    Handler: app.lambda_handler
+    Runtime: python3.12
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        Env: !Sub '${Env}'
+        Owner: !Sub '${Owner}'
+        Vendor: !Sub "${Vendor}"
+        TemplateVersion: !Sub '${TemplateVersion}'  
+        SNS2VendorArn: !GetAtt SNS2Vendor.TopicArn
+        EBBusName: !GetAtt EBBus.Name
+    Tags:
+      Project: !Sub '${CostTag}'
+      Owner: !Sub '${Owner}'
+      environment: !Sub '${Env}'
+
+Parameters:
+  TemplateVersion: 
+    Type: String
+    Description: Reanalysis SAM template Version number
+    Default: 'v1.0'
+  Env:
+    Type: String
+    Description: Which environment to deploy?(dev or prod)
+    Default: 'dev'
+    AllowedValues:
+        - dev
+        - prod
+        - devBatch
+        - devHybrid
+  Vendor:
+    Type: String
+    Description: Which Vendor data coming from?(ilmn, ont or pacb)
+    Default: 'ilmn'    
+  Owner:
+    Type: String
+    Description: Owner of the Stack?('precise' for SG100K project or 'gis' for Mirxes project)
+    Default: 'precise'
+    AllowedValues:
+      - precise
+      - gis
+  CostTag:
+    Type: String
+    Description: Tag to resource for costing purpose
+    Default: 'gatksv-156sample-healthomics-static'
+  DynamoDBName: 
+    Type: String
+    Description: DynamoDB table Name
+    Default: 'gatk-sv-dev-sample'
+    AllowedValues:
+      - 'gatk-sv-dev-sample'
+      - 'gatk-sv-dev-sample-BATCH'
+      - 'gatk-sv-prod-sample'
+      - 'gatk-sv-prod-sample-BATCH'
+      - 'jagc-gatk-sv-dev-sample'
+      - 'jagc-gatk-sv-prod-sample'
+  DynamoDBArn: 
+    Type: String
+    Description: DynamoDB table Arn
+    Default: 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-dev-sample'
+    AllowedValues:
+      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-dev-sample'
+      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-dev-sample-BATCH'
+      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-prod-sample'
+      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-prod-sample-BATCH'
+      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/jagc-gatk-sv-dev-sample'
+      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/jagc-gatk-sv-prod-sample'
+  DynamoDBStreamArn: 
+    Type: String
+    Description: DynamoDB Stream Arn
+    Default: 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-dev-sample/stream/<STREAM_TS>'
+  
+  ### Batch/Cohort Aggregates Table Parameters (to be updated manually)
+  AggregatesDynamoDBName:
+    Type: String
+    Description: DynamoDB Name for GATK-SV batch and cohort processes
+    Default: 'gatk-sv-dev-batch-cohort'
+    AllowedValues:
+      - 'gatk-sv-dev-batch-cohort'
+      - 'gatk-sv-dev-batch-cohort-BATCH'
+      - 'gatk-sv-prod-batch-cohort'
+      - 'gatk-sv-prod-batch-cohort-BATCH'
+      - 'jagc-gatk-sv-dev-batch-cohort'
+      - 'jagc-gatk-sv-prod-batch-cohort'
+  AggregatesDynamoDBArn:
+    Type: String
+    Description: DynamoDB Arn for GATK-SV batch and cohort processes
+    Default: 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-dev-batch-cohort'
+    AllowedValues:
+      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-dev-batch-cohort'
+      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-dev-batch-cohort-BATCH'
+      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-prod-batch-cohort'
+      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-prod-batch-cohort-BATCH'
+      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/jagc-gatk-sv-dev-batch-cohort'
+      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/jagc-gatk-sv-prod-batch-cohort'
+  AggregatesDynamoDBStreamArn:
+    Type: String
+    Description: DynamoDB Stream Arn for GATK-SV batch and cohort processes
+    Default: 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-dev-batch-cohort/stream/<STREAM_TS>'
+         
+  UserArn:
+    Type: String
+    Description: Allow IAM user to write to SqsUpdateDDB
+    Default: 'arn:aws:iam::<ACCOUNT>:user/<user>'         
+
+  ### Nested stack: Healthomics GATK-SV params
+  CramBucketName:
+    Type: String
+    Description: 'AWS Bucket Name with Dragen runs result'
+    Default: '<your-bucket>'    
+    AllowedValues:
+      - '<your-bucket>'
+      - '<your-bucket>'
+      - '<your-bucket>'
+      - '<your-bucket>'
+  Byob:
+    Type: String
+    Description: Databundle BYOB prefix structure needed for ICA
+    Default: 'byob/sg100k-reanalysis-test/dragen4.4.4'
+    AllowedValues:
+      - 'byob/sg100k-reanalysis-test/dragen4.4.4' 
+      - 'byob/sg100k-dragen-reanalysis/dragen4.4.4'
+      - 'data/gatk-sv-1kgp'
+      - 'data/dragen447_1kgp'
+      - 'byob/mirxes-wgs-delivery'
+      - 'dev/byob/mirxes-wgs-delivery'
+  OutputBucketName:
+    Type: String
+    Description: 'AWS Bucket Name for GATK-SV outputs'
+    Default: '<your-bucket>'    
+    AllowedValues:
+      - '<your-bucket>'
+      - 'precise-scratch'
+      - '<your-bucket>'
+      - '<your-bucket>'
+  ByobOutput:
+    Type: String
+    Description: "AWS Bucket folder for GATK-SV outputs"
+    Default: 'healthomics_test/test_output'
+    AllowedValues:
+      - 'healthomics_test/test_output'
+      - 'gatksv_demo156samples/healthomics_output'
+      - 'gatksv_demo156samples/healthomics_melt_output'
+      - 'gatksv_demo156samples/healthomics_output_dragen'
+      - 'gatksv_demo156samples/batch_output'
+      - 'gatksv_demo156samples/hybrid_output'
+      - 'gatksv_demo156samples/hybrid_melt_output'
+      - 'SG100K-SV/gatksv_glow/batch_output'
+      - 'SG100K-SV/gatksv_glow/hybrid_output'
+      - 'byob/sg100k-dragen-reanalysis/gatk-sv/hybrid_output_glow'
+      - 'byob/sg100k-dragen-reanalysis/gatk-sv/healthomics_glow_output'
+      - 'gatksv_demo156samples/healthomics_20260727_output'
+      - 'dev/byob/gatksv_runs'
+  ByobParameter:
+    Type: String
+    Description: "AWS Bucket folder for GATK-SV parameter files"
+    Default: 'healthomics_parameter'
+    AllowedValues:
+      - 'healthomics_input'
+      - 'healthomics_parameter'
+      - 'gatksv_demo156samples/healthomics_parameter'
+      - 'gatksv_demo156samples/healthomics_melt_parameter'
+      - 'gatksv_demo156samples/batch_parameter'
+      - 'gatksv_demo156samples/hybrid_parameter'
+      - 'gatksv_demo156samples/hybrid_melt_parameter'
+      - 'SG100K-SV/gatksv_glow/batch_parameter'
+      - 'SG100K-SV/gatksv_glow/hybrid_parameter'
+      - 'byob/sg100k-dragen-reanalysis/gatk-sv/hybrid_parameter_glow'
+      - 'gatksv_demo156samples/healthomics_20260727_parameter'
+      - 'dev/byob/gatksv_runs/gatksv_demo156samples/healthomics_parameter'
+      - 'byob/sg100k-dragen-reanalysis/gatk-sv/healthomics_glow_parameter'
+  ByobConfig:
+    Type: String
+    Default: 'pipeline_config'
+    Description: 'S3 prefix for pipeline config files (templates, docker_images, genome_references, workflow_ids)'
+    AllowedValues:
+      - 'pipeline_config'
+      - 'pipeline_config_batch'
+      - 'pipeline_config_batch_v2'
+      - 'gatksv_demo156samples/batch_config'
+      - 'byob/sg100k-dragen-reanalysis/gatk-sv/pipeline_config_batch_v2'
+      - 'byob/sg100k-dragen-reanalysis/gatk-sv/pipeline_config'
+      - 'resources/gatksv_pipeline_config'
+  HealthOmicsExecutionRole:
+    Type: String
+    Description: "IAM role ARN for HealthOmics workflow execution"
+    Default: 'arn:aws:iam::<ACCOUNT>:role/<ho-exec-role>'
+  HealthOmicsJsonSizeLimit:
+    Type: String
+    Default: '45000'
+    Description: 'HealthOmics Json input filesize limit'
+  KmsKeyArn:
+    Type: String
+    Description: "KMS key to access S3 bucket"
+    Default: ''
+  ConfigLayerS3Bucket:
+    Type: String
+    Description: S3 bucket containing the config Lambda layer zip
+    Default: '<your-bucket>'
+  ConfigLayerS3Key:
+    Type: String
+    Description: S3 key of the config Lambda layer zip
+    Default: 'lambda_layer/gatksv_config_layer.zip'
+  HealthOmicsCacheId:
+    Type: String
+    Description: HealthOmics run cache ID. Change value to reset task cache.
+    Default: '2758152'
+  AwsCliLayerArn:
+    Type: String
+    Description: ARN of the AWS CLI Lambda layer
+    Default: 'arn:aws:lambda:us-east-1:<ACCOUNT>:layer:aws-cli:1'
+
+  ### Nested stack: Cram Restore stack with RDB params
+  ### Nested stack: Dashboarding params
+  ### Compute backend
+  ComputeBackend:
+    Type: String
+    Description: Compute backend for WDL workflows (HealthOmics only in this repo)
+    Default: 'healthomics'
+    AllowedValues:
+      - 'healthomics'
+Conditions:
+  UseHealthOmics: !Equals [!Ref ComputeBackend, 'healthomics']
+Resources:
+  
+  ### Messaging: SQS and SNS
+  # SNS: messages to Vendor   
+  
+  SNS2Vendor:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${Owner}-${Vendor}-${Env}-gatksv-sns-notifications.fifo"
+      FifoTopic: true
+      ContentBasedDeduplication: true
+      Tags:
+        - Key: Project
+          Value: !Sub '${CostTag}'
+        - Key: environment
+          Value: !Sub '${Env}'
+        - Key: Owner
+          Value: !Sub '${Owner}'
+
+  # SNS: messages for Batch/Cohort Aggregates
+  SNS2Aggregates:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${Owner}-${Vendor}-${Env}-gatksv-aggregates-sns.fifo"
+      FifoTopic: true
+      ContentBasedDeduplication: true
+      Tags:
+        - Key: Project
+          Value: !Sub '${CostTag}'
+        - Key: environment
+          Value: !Sub '${Env}'
+        - Key: Owner
+          Value: !Sub '${Owner}'
+
+  # SQS for Sample Events
+  SqsUpdateDDB:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${Owner}-${Vendor}-${Env}-gatksv-sqs-events.fifo"
+      SqsManagedSseEnabled: true
+      VisibilityTimeout: 360
+      FifoQueue: true
+      ContentBasedDeduplication: true
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DlqUpdateDDB.Arn
+        maxReceiveCount: 5
+      Tags:
+        - Key: Project
+          Value: !Sub '${CostTag}'
+        - Key: environment
+          Value: !Sub '${Env}'
+        - Key: Owner
+          Value: !Sub '${Owner}'
+
+  # SQS for Batch/Cohort Aggregates
+  SqsUpdateAggregates:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${Owner}-${Vendor}-${Env}-gatksv-aggregates-sqs.fifo"
+      SqsManagedSseEnabled: true
+      VisibilityTimeout: 360
+      FifoQueue: true
+      ContentBasedDeduplication: true
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DlqUpdateAggregates.Arn
+        maxReceiveCount: 5
+      Tags:
+        - Key: Project
+          Value: !Sub '${CostTag}'
+        - Key: environment
+          Value: !Sub '${Env}'
+        - Key: Owner
+          Value: !Sub '${Owner}'
+
+  DlqUpdateDDB:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${Owner}-${Vendor}-${Env}-gatksv-dlq-events.fifo"
+      SqsManagedSseEnabled: true
+      FifoQueue: true
+      MessageRetentionPeriod: 1209600
+      Tags:
+        - Key: Project
+          Value: !Sub '${CostTag}'
+        - Key: environment
+          Value: !Sub '${Env}'
+        - Key: Owner
+          Value: !Sub '${Owner}'
+
+  DlqUpdateAggregates:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${Owner}-${Vendor}-${Env}-gatksv-aggregates-dlq.fifo"
+      SqsManagedSseEnabled: true
+      FifoQueue: true
+      MessageRetentionPeriod: 1209600
+      Tags:
+        - Key: Project
+          Value: !Sub '${CostTag}'
+        - Key: environment
+          Value: !Sub '${Env}'
+        - Key: Owner
+          Value: !Sub '${Owner}'
+          
+  # SQS subscribe to SNS
+  Sqs2SnsSubscription:
+    Type: 'AWS::SNS::Subscription'
+    Properties:
+      TopicArn: !GetAtt SNS2Vendor.TopicArn
+      Endpoint: !GetAtt SqsUpdateDDB.Arn
+      Protocol: sqs
+      RawMessageDelivery: true
+
+  # SQS Aggregates subscribe to SNS Aggregates
+  SqsAggregates2SnsSubscription:
+    Type: 'AWS::SNS::Subscription'
+    Properties:
+      TopicArn: !GetAtt SNS2Aggregates.TopicArn
+      Endpoint: !GetAtt SqsUpdateAggregates.Arn
+      Protocol: sqs
+      RawMessageDelivery: true
+
+  ### ROLES and POLICIES
+  SqsPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref SqsUpdateDDB
+      PolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal: {
+            AWS: [
+              !Sub "${UserArn}"
+            ]
+          }
+          Action: "sqs:SendMessage"
+          Resource: !GetAtt SqsUpdateDDB.Arn
+        - Effect: Allow
+          Principal: {
+              Service: [
+                "sns.amazonaws.com"
+              ]
+          }
+          Action: "sqs:SendMessage"
+          Resource: !GetAtt SqsUpdateDDB.Arn
+          Condition: {
+            ArnEquals: {
+              aws:SourceArn: !GetAtt SNS2Vendor.TopicArn
+            }
+          }
+        - Effect: Allow
+          Principal:
+            AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+          Action: "sqs:SendMessage"
+          Resource: !GetAtt SqsUpdateDDB.Arn
+          Condition:
+            ArnLike:
+              aws:SourceArn: !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:precise-ilmn-*-lambda-send-gse-pending"
+
+  SqsAggregatesPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref SqsUpdateAggregates
+      PolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal: {
+            AWS: [
+              !Sub "${UserArn}"
+            ]
+          }
+          Action: "sqs:SendMessage"
+          Resource: !GetAtt SqsUpdateAggregates.Arn
+        - Effect: Allow
+          Principal: {
+              Service: [
+                "sns.amazonaws.com"
+              ]
+          }
+          Action: "sqs:SendMessage"
+          Resource: !GetAtt SqsUpdateAggregates.Arn
+          Condition: {
+            ArnEquals: {
+              aws:SourceArn: !GetAtt SNS2Aggregates.TopicArn
+            }
+          }
+
+# Pipe roles
+  PipeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - pipes.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: PipeSourcePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "dynamodb:DescribeStream"
+                  - "dynamodb:GetRecords"
+                  - "dynamodb:GetShardIterator"
+                  - "dynamodb:ListStreams"
+                Resource: 
+                  - !Sub '${DynamoDBStreamArn}'
+                  - !Sub '${AggregatesDynamoDBStreamArn}'
+        - PolicyName: PipeTargetPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'events:PutEvents'
+                  - 'lambda:InvokeFunction'
+                Resource:
+                  - !GetAtt EBBus.Arn 
+      Tags:
+        - Key: Project
+          Value: !Sub '${CostTag}'
+        - Key: environment
+          Value: !Sub '${Env}'
+        - Key: Owner
+          Value: !Sub '${Owner}'            
+  
+  ### INPUT: LAMBDA to DYNAMODB 
+  # 1. Record msg from SQS to DynamoDB (Samples)
+  LambdaUpdateDDB:
+    Type: AWS::Serverless::Function 
+    Properties:
+      Environment:
+        Variables:
+          DDB_TABLE_NAME: !Sub '${DynamoDBName}'
+      FunctionName: !Sub "${Owner}-${Vendor}-${Env}-gatksv-lambda-events"
+      CodeUri: api/event
+      Policies: 
+      - Statement:
+        - Sid: DynamoDBExecutionPolicy
+          Effect: Allow
+          Action:
+          - dynamodb:DescribeStream
+          - dynamodb:GetRecords
+          - dynamodb:GetSharedIterator
+          - dynamodb:ListStreams
+          - dynamodb:PutItem
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Resource: !Sub '${DynamoDBArn}'
+        - Effect: Allow
+          Action:
+          - sqs:SendMessage
+          Resource: 
+          - !GetAtt DlqUpdateDDB.Arn
+      Events:
+        SQSEventLog:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt SqsUpdateDDB.Arn
+            BatchSize: 1
+            Enabled: true
+      Tags:
+        Project : !Sub '${CostTag}'
+        environment : !Sub '${Env}'
+        Owner : !Sub '${Owner}'
+
+  # 2. Record msg from SQS to DynamoDB (Aggregates)
+  LambdaUpdateAggregates:
+    Type: AWS::Serverless::Function 
+    Properties:
+      Environment:
+        Variables:
+          DDB_TABLE_NAME: !Sub '${AggregatesDynamoDBName}'
+      FunctionName: !Sub "${Owner}-${Vendor}-${Env}-gatksv-lambda-aggregates"
+      CodeUri: api/aggregates
+      Policies: 
+      - Statement:
+        - Sid: DynamoDBExecutionPolicy
+          Effect: Allow
+          Action:
+          - dynamodb:DescribeStream
+          - dynamodb:GetRecords
+          - dynamodb:GetSharedIterator
+          - dynamodb:ListStreams
+          - dynamodb:PutItem
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Resource: !Sub '${AggregatesDynamoDBArn}'
+        - Effect: Allow
+          Action:
+          - sqs:SendMessage
+          Resource: 
+          - !GetAtt DlqUpdateAggregates.Arn
+      Events:
+        SQSEventLog:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt SqsUpdateAggregates.Arn
+            BatchSize: 1
+            Enabled: true
+      Tags:
+        Project : !Sub '${CostTag}'
+        environment : !Sub '${Env}'
+        Owner : !Sub '${Owner}'
+        
+  ### OUTPUT: DDB Stream to BUS
+  # DDB -> Eventbridge Pipe (Samples)
+  EBPipeSampleEvents:
+    Type: AWS::Pipes::Pipe
+    Properties:
+      Name: !Sub '${Owner}-${Vendor}-${Env}-gatksv-pipe-sample-events'
+      Description: "Pipe to connect Sample DDB stream to EventBridge Bus"
+      RoleArn: !GetAtt PipeRole.Arn
+      Source: !Sub '${DynamoDBStreamArn}'
+      SourceParameters:
+        DynamoDBStreamParameters:
+          # LATEST | Start from newest records only (ignore existing) -> for development
+          StartingPosition: LATEST
+          # TRIM_HORIZON | Start from oldest available record in stream 
+          # StartingPosition: TRIM_HORIZON 
+      Target: !GetAtt EBBus.Arn
+      Tags:
+        Project : !Sub '${CostTag}'
+        environment : !Sub '${Env}'
+        Owner : !Sub '${Owner}'
+
+  # DDB -> Eventbridge Pipe (Aggregates)
+  EBPipeAggregateEvents:
+    Type: AWS::Pipes::Pipe
+    Properties:
+      Name: !Sub '${Owner}-${Vendor}-${Env}-gatksv-pipe-aggregate-events'
+      Description: "Pipe to connect Aggregates DDB stream to EventBridge Bus"
+      RoleArn: !GetAtt PipeRole.Arn
+      Source: !Sub '${AggregatesDynamoDBStreamArn}'
+      SourceParameters:
+        DynamoDBStreamParameters:
+          StartingPosition: LATEST
+      Target: !GetAtt EBBus.Arn
+      Tags:
+        Project : !Sub '${CostTag}'
+        environment : !Sub '${Env}'
+        Owner : !Sub '${Owner}'
+
+  # Event Bus
+  EBBus:
+    Type: AWS::Events::EventBus
+    Properties: 
+      Name: !Sub '${Owner}-${Vendor}-${Env}-gatksv-bus-events'
+      Tags:
+        - Key: Project
+          Value: !Sub '${CostTag}'
+        - Key: environment
+          Value: !Sub '${Env}'
+        - Key: Owner
+          Value: !Sub '${Owner}'
+
+  ### NESTED APPLICATIONS
+
+  # GATK-SV on HealthOmics
+  GatkSv:
+    Type: AWS::Serverless::Application
+    Condition: UseHealthOmics
+    Properties:
+      Location: gatksv_healthomics/template.yaml
+      Parameters:
+        Env: !Sub ${Env}
+        Owner: !Sub ${Owner}
+        Vendor: !Sub ${Vendor}
+        CostTag: !Sub ${CostTag}
+        TemplateVersion: !Sub '${TemplateVersion}'
+        EBBusName: !GetAtt EBBus.Name
+        SNS2VendorArn: !GetAtt SNS2Vendor.TopicArn 
+        SNS2AggregatesArn: !GetAtt SNS2Aggregates.TopicArn
+        CramBucketName: !Ref CramBucketName
+        Byob: !Sub ${Byob}
+        OutputBucketName: !Sub ${OutputBucketName}
+        ByobOutput: !Sub ${ByobOutput}
+        DynamoDBName: !Sub ${DynamoDBName}
+        DynamoDBArn: !Sub ${DynamoDBArn}
+        AggregatesDynamoDBName: !Sub ${AggregatesDynamoDBName}
+        AggregatesDynamoDBArn: !Sub ${AggregatesDynamoDBArn}
+        HealthOmicsExecutionRole: !Sub ${HealthOmicsExecutionRole}
+        ByobParameter: !Sub ${ByobParameter} 
+        ByobConfig: !Sub ${ByobConfig}
+        ComputeBackend: !Ref ComputeBackend
+        ConfigLayerS3Bucket: !Ref ConfigLayerS3Bucket
+        ConfigLayerS3Key: !Ref ConfigLayerS3Key
+        HealthOmicsCacheId: !Ref HealthOmicsCacheId
+        AwsCliLayerArn: !Ref AwsCliLayerArn
+        HealthOmicsJsonSizeLimit: !Ref HealthOmicsJsonSizeLimit
+        

@@ -1,0 +1,29 @@
+{
+  "description": "Template for FilterGenotypes workflow",
+  "static_params": [
+    "primary_contigs_fai",
+    "gq_recalibrator_model_file",
+    "genome_tracks",
+    "site_level_comparison_datasets",
+    "sample_level_comparison_datasets"
+  ],
+  "docker_params": [
+    "sv_pipeline_docker",
+    "sv_base_mini_docker",
+    "linux_docker",
+	"gatk_docker",
+    "manifest_reader_docker"
+  ],
+  "dynamic_params": {
+    "output_prefix": "{{cohort_id}}",
+    "ped_file": "{{ped_file}}",
+    "vcf": "{{query:ddb:output_paths:SVConcordance:concordance_vcf:vcf.gz:glob:single}}",
+    "vcf_index": "{{query:ddb:output_paths:SVConcordance:concordance_vcf_index:tbi:glob:single}}",
+    "ploidy_table": "{{query:ddb:output_paths:JoinRawCalls:ploidy_table:tsv:glob:single}}"
+  },
+  "optional_params": {
+    "sl_filter_args": "--small-del-threshold 93 --medium-del-threshold 150 --small-dup-threshold -51 --medium-dup-threshold -4 --ins-threshold -13 --inv-threshold -19",
+    "recalibrate_gq_args": ["--keep-homvar false", "--keep-homref true", "--keep-multiallelic true", "--skip-genotype-filtering true", "--min-samples-to-estimate-allele-frequency -1"],
+	"gatk_docker": "<ACCOUNT>.dkr.ecr.<REGION>.amazonaws.com/gatk-sv/gatk:mw-tb-form-sv-filter-training-data-eb62a3"
+  }
+}

@@ -1,0 +1,8 @@
+# FROM public.ecr.aws/amazonlinux/amazonlinux:2023-minimal
+# RUN dnf install -y aws-cli && dnf clean all
+
+FROM amazon/aws-cli:latest
+ENTRYPOINT []
+CMD ["/bin/sh"]
+
+RUN aws --version

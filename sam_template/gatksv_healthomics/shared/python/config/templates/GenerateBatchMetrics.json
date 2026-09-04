@@ -1,0 +1,50 @@
+{
+  "description": "Template for GenerateBatchMetrics workflow",
+  "static_params": [
+    "ref_dict",
+    "primary_contigs_list",
+    "autosome_contigs",
+    "allosome_contigs",
+    "chr_x",
+    "rmsk",
+    "segdups"
+  ],
+  "docker_params": [
+    "sv_pipeline_docker",
+    "sv_base_mini_docker",
+    "sv_base_docker",
+    "linux_docker"
+  ],
+  "dynamic_params": {
+    "batch": "{{batch_id}}",
+    "ped_file": "{{ped_file}}",
+    "discfile": "{{query:ddb:output_paths:GatherBatchEvidence:merged_PE:txt.gz:glob:single}}",
+    "pe_file_index": "{{query:ddb:output_paths:GatherBatchEvidence:merged_PE_index:tbi:glob:single}}",
+    "splitfile": "{{query:ddb:output_paths:GatherBatchEvidence:merged_SR:txt.gz:glob:single}}",
+    "sr_file_index": "{{query:ddb:output_paths:GatherBatchEvidence:merged_SR_index:tbi:glob:single}}",
+    "baf_metrics": "{{query:ddb:output_paths:GatherBatchEvidence:merged_BAF:txt.gz:glob:single}}",
+    "baf_file_index": "{{query:ddb:output_paths:GatherBatchEvidence:merged_BAF_index:tbi:glob:single}}",
+    "coveragefile": "{{query:ddb:output_paths:GatherBatchEvidence:merged_bincov:txt.gz:glob:single}}",
+    "rd_file_index": "{{query:ddb:output_paths:GatherBatchEvidence:merged_bincov_index:tbi:glob:single}}",
+    "medianfile": "{{query:ddb:output_paths:GatherBatchEvidence:median_cov:bed:glob:single}}",
+    "depth_vcf": "{{query:ddb:output_paths:ClusterBatch:clustered_depth_vcf:vcf.gz:glob:single}}",
+    "depth_vcf_index": "{{query:ddb:output_paths:ClusterBatch:clustered_depth_vcf_index:tbi:glob:single}}",
+    "dragen_vcf": "{{query:ddb:output_paths:ClusterBatch:clustered_dragen_vcf:vcf.gz:glob:single}}",
+    "dragen_vcf_index": "{{query:ddb:output_paths:ClusterBatch:clustered_dragen_vcf_index:tbi:glob:single}}",
+    "manta_vcf": "{{query:ddb:output_paths:ClusterBatch:clustered_manta_vcf:vcf.gz:glob:single}}",
+    "manta_vcf_index": "{{query:ddb:output_paths:ClusterBatch:clustered_manta_vcf_index:tbi:glob:single}}",
+    "melt_vcf": "{{query:ddb:output_paths:ClusterBatch:clustered_melt_vcf:vcf.gz:glob:single}}",
+    "melt_vcf_index": "{{query:ddb:output_paths:ClusterBatch:clustered_melt_vcf_index:tbi:glob:single}}",
+    "wham_vcf": "{{query:ddb:output_paths:ClusterBatch:clustered_wham_vcf:vcf.gz:glob:single}}",
+    "wham_vcf_index": "{{query:ddb:output_paths:ClusterBatch:clustered_wham_vcf_index:tbi:glob:single}}",
+    "scramble_vcf": "{{query:ddb:output_paths:ClusterBatch:clustered_scramble_vcf:vcf.gz:glob:single}}",
+    "scramble_vcf_index": "{{query:ddb:output_paths:ClusterBatch:clustered_scramble_vcf_index:tbi:glob:single}}"
+  },
+  "optional_params": {
+    "BAF_split_size": 10000,
+    "RD_split_size": 10000,
+    "PE_split_size": 10000,
+    "SR_split_size": 1000,
+    "common_cnv_size_cutoff": 5000
+  }
+}

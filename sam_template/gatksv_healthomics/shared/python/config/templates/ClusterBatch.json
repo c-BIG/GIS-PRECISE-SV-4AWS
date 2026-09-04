@@ -1,0 +1,41 @@
+{
+  "description": "Template for ClusterBatch workflow",
+  "static_params": [
+    "reference_fasta",
+    "reference_fasta_fai",
+    "reference_dict",
+    "contig_list",
+    "depth_exclude_intervals",
+    "depth_exclude_intervals_idx",
+    "pesr_exclude_intervals",
+    "pesr_exclude_intervals_idx",
+    "chr_x",
+    "chr_y"
+  ],
+  "docker_params": [
+    "sv_pipeline_docker",
+    "sv_base_mini_docker",
+    "gatk_docker",
+    "linux_docker"
+  ],
+  "dynamic_params": {
+    "batch": "{{batch_id}}",
+    "ped_file": "{{ped_file}}",
+    "del_bed": "{{query:ddb:output_paths:GatherBatchEvidence:merged_dels:bed.gz:glob:single}}",
+    "dup_bed": "{{query:ddb:output_paths:GatherBatchEvidence:merged_dups:bed.gz:glob:single}}",
+    "manta_vcf_tar": "{{query:ddb:output_paths:GatherBatchEvidence:std_manta_vcf_tar:tar.gz:glob:single}}",
+    "dragen_vcf_tar": "{{query:ddb:output_paths:GatherBatchEvidence:std_dragen_vcf_tar:tar.gz:glob:single}}",
+    "melt_vcf_tar": "{{query:ddb:output_paths:GatherBatchEvidence:std_melt_vcf_tar:tar.gz:glob:single}}",
+    "scramble_vcf_tar": "{{query:ddb:output_paths:GatherBatchEvidence:std_scramble_vcf_tar:tar.gz:glob:single}}",
+    "wham_vcf_tar": "{{query:ddb:output_paths:GatherBatchEvidence:std_wham_vcf_tar:tar.gz:glob:single}}"
+  },
+  "optional_params": {
+    "N_IQR_cutoff_plotting": 6,
+    "depth_exclude_overlap_fraction": 0.5,
+    "depth_interval_overlap": 0.8,
+    "depth_clustering_algorithm": "SINGLE_LINKAGE",
+    "pesr_interval_overlap": 0.1,
+    "pesr_breakend_window": 300,
+    "pesr_clustering_algorithm": "SINGLE_LINKAGE"
+  }
+}

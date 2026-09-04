@@ -1,0 +1,36 @@
+{
+  "description": "Template for GenotypeBatch workflow",
+  "static_params": [
+    "ref_dict",
+    "primary_contigs_list",
+    "reference_build",
+    "bin_exclude",
+    "bin_exclude_idx",
+    "seed_cutoffs",
+    "pesr_exclude_list"
+  ],
+  "docker_params": [
+    "sv_pipeline_docker",
+    "sv_base_mini_docker",
+    "linux_docker"
+  ],
+  "dynamic_params": {
+    "batch": "{{batch_id}}",
+    "batch_pesr_vcf": "{{query:ddb:output_paths:FilterBatchSamples:outlier_filtered_pesr_vcf:vcf.gz:glob:single}}",
+    "batch_depth_vcf": "{{query:ddb:output_paths:FilterBatchSamples:outlier_filtered_depth_vcf:vcf.gz:glob:single}}",
+    "cohort_pesr_vcf": "{{query:ddb:output_paths:MergeBatchSites:cohort_pesr_vcf:vcf.gz:glob:single}}",
+    "cohort_depth_vcf": "{{query:ddb:output_paths:MergeBatchSites:cohort_depth_vcf:vcf.gz:glob:single}}",
+    "rf_cutoffs": "{{query:ddb:output_paths:FilterBatchSites:cutoffs:cutoffs:glob:single}}",
+    "coveragefile": "{{query:ddb:output_paths:GatherBatchEvidence:merged_bincov:txt.gz:glob:single}}",
+    "coveragefile_index": "{{query:ddb:output_paths:GatherBatchEvidence:merged_bincov_index:tbi:glob:single}}",
+    "medianfile": "{{query:ddb:output_paths:GatherBatchEvidence:median_cov:bed:glob:single}}",
+    "discfile": "{{query:ddb:output_paths:GatherBatchEvidence:merged_PE:txt.gz:glob:single}}",
+    "discfile_index": "{{query:ddb:output_paths:GatherBatchEvidence:merged_PE_index:tbi:glob:single}}",
+    "splitfile": "{{query:ddb:output_paths:GatherBatchEvidence:merged_SR:txt.gz:glob:single}}",
+    "splitfile_index": "{{query:ddb:output_paths:GatherBatchEvidence:merged_SR_index:tbi:glob:single}}"
+  },
+  "optional_params": {
+    "n_RD_genotype_bins": 100000,
+    "n_per_split": 5000
+  }
+}
