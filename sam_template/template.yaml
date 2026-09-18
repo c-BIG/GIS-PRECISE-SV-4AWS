@@ -36,48 +36,25 @@ Parameters:
     Type: String
     Description: Which environment to deploy?(dev or prod)
     Default: 'dev'
-    AllowedValues:
-        - dev
-        - prod
-        - devBatch
-        - devHybrid
   Vendor:
     Type: String
-    Description: Which Vendor data coming from?(ilmn, ont or pacb)
+    Description: Which Vendor data coming from?
     Default: 'ilmn'    
   Owner:
     Type: String
-    Description: Owner of the Stack?('precise' for SG100K project or 'gis' for Mirxes project)
-    Default: 'precise'
-    AllowedValues:
-      - precise
-      - gis
+    Description: Owner of the Stack?
+    Default: 'Owner'
   CostTag:
     Type: String
     Description: Tag to resource for costing purpose
-    Default: 'gatksv-156sample-healthomics-static'
   DynamoDBName: 
     Type: String
     Description: DynamoDB table Name
     Default: 'gatk-sv-dev-sample'
-    AllowedValues:
-      - 'gatk-sv-dev-sample'
-      - 'gatk-sv-dev-sample-BATCH'
-      - 'gatk-sv-prod-sample'
-      - 'gatk-sv-prod-sample-BATCH'
-      - 'jagc-gatk-sv-dev-sample'
-      - 'jagc-gatk-sv-prod-sample'
   DynamoDBArn: 
     Type: String
     Description: DynamoDB table Arn
     Default: 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-dev-sample'
-    AllowedValues:
-      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-dev-sample'
-      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-dev-sample-BATCH'
-      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-prod-sample'
-      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-prod-sample-BATCH'
-      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/jagc-gatk-sv-dev-sample'
-      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/jagc-gatk-sv-prod-sample'
   DynamoDBStreamArn: 
     Type: String
     Description: DynamoDB Stream Arn
@@ -88,24 +65,10 @@ Parameters:
     Type: String
     Description: DynamoDB Name for GATK-SV batch and cohort processes
     Default: 'gatk-sv-dev-batch-cohort'
-    AllowedValues:
-      - 'gatk-sv-dev-batch-cohort'
-      - 'gatk-sv-dev-batch-cohort-BATCH'
-      - 'gatk-sv-prod-batch-cohort'
-      - 'gatk-sv-prod-batch-cohort-BATCH'
-      - 'jagc-gatk-sv-dev-batch-cohort'
-      - 'jagc-gatk-sv-prod-batch-cohort'
   AggregatesDynamoDBArn:
     Type: String
     Description: DynamoDB Arn for GATK-SV batch and cohort processes
     Default: 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-dev-batch-cohort'
-    AllowedValues:
-      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-dev-batch-cohort'
-      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-dev-batch-cohort-BATCH'
-      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-prod-batch-cohort'
-      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/gatk-sv-prod-batch-cohort-BATCH'
-      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/jagc-gatk-sv-dev-batch-cohort'
-      - 'arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/jagc-gatk-sv-prod-batch-cohort'
   AggregatesDynamoDBStreamArn:
     Type: String
     Description: DynamoDB Stream Arn for GATK-SV batch and cohort processes
@@ -121,79 +84,25 @@ Parameters:
     Type: String
     Description: 'AWS Bucket Name with Dragen runs result'
     Default: '<your-bucket>'    
-    AllowedValues:
-      - '<your-bucket>'
-      - '<your-bucket>'
-      - '<your-bucket>'
-      - '<your-bucket>'
   Byob:
     Type: String
     Description: Databundle BYOB prefix structure needed for ICA
-    Default: 'byob/sg100k-reanalysis-test/dragen4.4.4'
-    AllowedValues:
-      - 'byob/sg100k-reanalysis-test/dragen4.4.4' 
-      - 'byob/sg100k-dragen-reanalysis/dragen4.4.4'
-      - 'data/gatk-sv-1kgp'
-      - 'data/dragen447_1kgp'
-      - 'byob/mirxes-wgs-delivery'
-      - 'dev/byob/mirxes-wgs-delivery'
   OutputBucketName:
     Type: String
     Description: 'AWS Bucket Name for GATK-SV outputs'
     Default: '<your-bucket>'    
-    AllowedValues:
-      - '<your-bucket>'
-      - 'precise-scratch'
-      - '<your-bucket>'
-      - '<your-bucket>'
   ByobOutput:
     Type: String
     Description: "AWS Bucket folder for GATK-SV outputs"
     Default: 'healthomics_test/test_output'
-    AllowedValues:
-      - 'healthomics_test/test_output'
-      - 'gatksv_demo156samples/healthomics_output'
-      - 'gatksv_demo156samples/healthomics_melt_output'
-      - 'gatksv_demo156samples/healthomics_output_dragen'
-      - 'gatksv_demo156samples/batch_output'
-      - 'gatksv_demo156samples/hybrid_output'
-      - 'gatksv_demo156samples/hybrid_melt_output'
-      - 'SG100K-SV/gatksv_glow/batch_output'
-      - 'SG100K-SV/gatksv_glow/hybrid_output'
-      - 'byob/sg100k-dragen-reanalysis/gatk-sv/hybrid_output_glow'
-      - 'byob/sg100k-dragen-reanalysis/gatk-sv/healthomics_glow_output'
-      - 'gatksv_demo156samples/healthomics_20260727_output'
-      - 'dev/byob/gatksv_runs'
   ByobParameter:
     Type: String
     Description: "AWS Bucket folder for GATK-SV parameter files"
     Default: 'healthomics_parameter'
-    AllowedValues:
-      - 'healthomics_input'
-      - 'healthomics_parameter'
-      - 'gatksv_demo156samples/healthomics_parameter'
-      - 'gatksv_demo156samples/healthomics_melt_parameter'
-      - 'gatksv_demo156samples/batch_parameter'
-      - 'gatksv_demo156samples/hybrid_parameter'
-      - 'gatksv_demo156samples/hybrid_melt_parameter'
-      - 'SG100K-SV/gatksv_glow/batch_parameter'
-      - 'SG100K-SV/gatksv_glow/hybrid_parameter'
-      - 'byob/sg100k-dragen-reanalysis/gatk-sv/hybrid_parameter_glow'
-      - 'gatksv_demo156samples/healthomics_20260727_parameter'
-      - 'dev/byob/gatksv_runs/gatksv_demo156samples/healthomics_parameter'
-      - 'byob/sg100k-dragen-reanalysis/gatk-sv/healthomics_glow_parameter'
   ByobConfig:
     Type: String
     Default: 'pipeline_config'
     Description: 'S3 prefix for pipeline config files (templates, docker_images, genome_references, workflow_ids)'
-    AllowedValues:
-      - 'pipeline_config'
-      - 'pipeline_config_batch'
-      - 'pipeline_config_batch_v2'
-      - 'gatksv_demo156samples/batch_config'
-      - 'byob/sg100k-dragen-reanalysis/gatk-sv/pipeline_config_batch_v2'
-      - 'byob/sg100k-dragen-reanalysis/gatk-sv/pipeline_config'
-      - 'resources/gatksv_pipeline_config'
   HealthOmicsExecutionRole:
     Type: String
     Description: "IAM role ARN for HealthOmics workflow execution"

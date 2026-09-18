@@ -29,6 +29,24 @@ aggregates_table = dynamodb.Table(AGGREGATES_DDB_TABLE)
 GENOME_REFS = get_genome_references()
 DOCKER_IMAGES = get_docker_images()
 
+
+def _resolve_docker_ref(val):
+    """Resolve a '{{docker:<key>}}' reference to its image URI from docker_images.json.
+    Lets a template override (e.g. optional_params.gatk_docker) point at another
+    docker key by name instead of hardcoding a full ECR URI. Non-matching values
+    are returned unchanged.
+    """
+    if isinstance(val, str) and val.startswith('{{docker:') and val.endswith('}}'):
+        ref_key = val[len('{{docker:'):-2].strip()
+        resolved = DOCKER_IMAGES.get(ref_key)
+        if not resolved:
+            raise ValueError(
+                f"optional_params references unknown docker key '{ref_key}' "
+                f"(via {val}); not found in docker_images.json"
+            )
+        return resolved
+    return val
+
 # Module-level cache: cleared when Lambda invocation ends
 _s3_listing_cache = {}   # (sample_id, workflow_stage) → [s3 keys]
 _output_uri_cache = {}   # (sample_id, workflow_stage) → output_uri string
@@ -115,6 +133,7 @@ def build_parameters(workflow_stage, run_config, ddb_data=None):
             val = run_config['options'][key]
         else:
             val = default_value
+        val = _resolve_docker_ref(val)
         if isinstance(val, str) and val.lower() in ('true', 'false'):
             val = val.lower() == 'true'
         params[key] = val

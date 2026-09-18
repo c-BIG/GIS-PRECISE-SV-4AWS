@@ -7,6 +7,9 @@ REPO_CLEANUP.md
 *.bak_*
 *.orig
 
+# Local rollback / setup backups (not for the public repo)
+backup_*/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -24,3 +27,13 @@ packaged.yaml
 # OS / editor
 .DS_Store
 *.swp
+
+# data / dev testing
+*.csv
+*.log
+# Account-specific generated configs — committed as *.template.json / *.template.
+# These filled versions hold real account IDs / bucket names; keep them local only.
+sam_template/gatksv_healthomics/shared/python/config/docker_images.json
+sam_template/gatksv_healthomics/shared/python/config/genome_references.json
+sam_template/samconfig.toml
+!sam_template/samconfig.toml.template

@@ -1,10 +1,19 @@
 #!/usr/bin/env python3
 """
-Update config files for a new AWS account:
-  - docker_images.json    : rewrite ECR account ID in all URIs
-  - genome_references.json : rewrite S3 bucket + prefix
-  - config_grids/templates/FilterGenotypes.json : rewrite hardcoded gatk_docker override
+Generate account-specific config files from the versioned templates in this dir.
+
+Point-of-reference templates (edit these, commit them — they hold placeholders):
+  - scripts/setup/docker_images.v1.1.template.json  (<ACCOUNT>/<REGION>)
+  - scripts/setup/genome_references.template.json      (<your-bucket>/<ref-prefix>)
+
+Generated (account-filled) outputs, consumed by the runtime loader:
+  - gatksv_healthomics/shared/python/config/docker_images.json
+  - gatksv_healthomics/shared/python/config/genome_references.json
+  - gatksv_healthomics/shared/python/config/templates/FilterGenotypes.json (gatk_docker override)
   - (optional) template.yaml : strip AllowedValues constraints on account-specific params
+
+By default each output is (re)generated FROM its template, then placeholders are
+substituted. Use --no-from-template to patch the existing output in place instead.
 
 Usage:
     python3 08_update_configs.py \
@@ -12,8 +21,7 @@ Usage:
         --region ap-southeast-1 \
         --ref-bucket my-bucket \
         --ref-prefix genome/gatk-sv \
-        [--old-ref-bucket <old-bucket>] \
-        [--old-ref-prefix genome/gatk-sv] \
+        [--no-from-template] \
         [--patch-template]
 """
 
@@ -21,25 +29,49 @@ import argparse
 import json
 import os
 import re
+import shutil
 
-BASE = os.path.join(os.path.dirname(__file__), '..', '..')
+# Matches an ECR registry host in either form:
+#   - public-template placeholder: <ACCOUNT>.dkr.ecr.<REGION>.amazonaws.com
+#   - already-filled real values:  123456789012.dkr.ecr.ap-southeast-1.amazonaws.com
+# So the setup script works on the public template (expected case) and is
+# idempotent on re-runs against an already-filled file.
+ECR_REGISTRY_RE = re.compile(
+    r'(?:\d{12}|<ACCOUNT>)\.dkr\.ecr\.(?:[a-z0-9-]+|<REGION>)\.amazonaws\.com'
+)
+
+SETUP_DIR = os.path.dirname(__file__)
+BASE = os.path.join(SETUP_DIR, '..', '..')
 CONFIG_DIR = os.path.join(BASE, 'gatksv_healthomics', 'shared', 'python', 'config')
 GRIDS_DIR = os.path.join(BASE, 'gatksv_healthomics', 'shared', 'python', 'config_grids', 'templates')
 TEMPLATE = os.path.join(BASE, 'template.yaml')
 
+# Point-of-reference templates (source of truth, hold placeholders).
+DOCKER_TEMPLATE = os.path.join(SETUP_DIR, 'docker_images.v1.1.template.json')
+GENOME_REFS_TEMPLATE = os.path.join(SETUP_DIR, 'genome_references.template.json')
 
-def update_docker_images(account_id, region):
-    path = os.path.join(CONFIG_DIR, 'docker_images.json')
-    with open(path) as f:
+
+def _seed_from_template(template_path, output_path, from_template):
+    """If from_template and the template exists, copy it over the output so the
+    output is regenerated from the versioned template before placeholder fill.
+    Drops any leading '_comment' key after loading. Returns the loaded dict."""
+    if from_template and os.path.exists(template_path):
+        shutil.copyfile(template_path, output_path)
+        print(f"  seeded {os.path.basename(output_path)} from {os.path.basename(template_path)}")
+    with open(output_path) as f:
         data = json.load(f)
+    data.pop('_comment', None)
+    return data
+
+
+def update_docker_images(account_id, region, from_template):
+    path = os.path.join(CONFIG_DIR, 'docker_images.json')
+    data = _seed_from_template(DOCKER_TEMPLATE, path, from_template)
 
     new_registry = f"{account_id}.dkr.ecr.{region}.amazonaws.com"
     changed = 0
     for key, uri in data.items():
-        new_uri = re.sub(
-            r'\d{12}\.dkr\.ecr\.[a-z0-9-]+\.amazonaws\.com',
-            new_registry, uri
-        )
+        new_uri = ECR_REGISTRY_RE.sub(new_registry, uri)
         if new_uri != uri:
             data[key] = new_uri
             changed += 1
@@ -49,27 +81,43 @@ def update_docker_images(account_id, region):
     print(f"docker_images.json: rewrote {changed} URIs -> {new_registry}")
 
 
-def update_genome_references(ref_bucket, ref_prefix, old_bucket, old_prefix):
+def update_genome_references(ref_bucket, ref_prefix, from_template):
     path = os.path.join(CONFIG_DIR, 'genome_references.json')
-    if not old_bucket:
-        print("genome_references.json: --old-ref-bucket not provided; skipped "
-              "(re-run with --old-ref-bucket <existing-bucket> to rewrite S3 paths)")
-        return
-    with open(path) as f:
-        data = json.load(f)
+    data = _seed_from_template(GENOME_REFS_TEMPLATE, path, from_template)
 
-    old_base = f"s3://{old_bucket}/{old_prefix}"
+    # Template S3 paths use the placeholders s3://<your-bucket>/<ref-prefix>/...
+    # Substitute the bucket and prefix placeholders directly. Also tolerate an
+    # already-filled file on re-run: if the exact placeholder base isn't present,
+    # fall back to swapping just the bucket segment.
     new_base = f"s3://{ref_bucket}/{ref_prefix}"
+    ph_base = "s3://<your-bucket>/<ref-prefix>"
+
+    def rewrite(val):
+        if not (isinstance(val, str) and val.startswith('s3://')):
+            return val, 0
+        if val.startswith(ph_base):
+            return val.replace(ph_base, new_base, 1), 1
+        return val, 0
+
+    def rewrite_deep(val):
+        """Rewrite strings recursively through nested lists (e.g. list-of-lists
+        like site_level_comparison_datasets)."""
+        if isinstance(val, list):
+            count = 0
+            new_list = []
+            for item in val:
+                new_item, c = rewrite_deep(item)
+                new_list.append(new_item)
+                count += c
+            return new_list, count
+        return rewrite(val)
+
     changed = 0
     for key, val in data.items():
-        if not (isinstance(val, str) and val.startswith('s3://')):
-            continue
-        if val.startswith(old_base):
-            data[key] = val.replace(old_base, new_base, 1)
-            changed += 1
-        elif val.startswith(f"s3://{old_bucket}/"):
-            data[key] = val.replace(f"s3://{old_bucket}/", f"s3://{ref_bucket}/", 1)
-            changed += 1
+        new_val, c = rewrite_deep(val)
+        if c:
+            data[key] = new_val
+            changed += c
 
     with open(path, 'w') as f:
         json.dump(data, f, indent=2)
@@ -77,23 +125,33 @@ def update_genome_references(ref_bucket, ref_prefix, old_bucket, old_prefix):
 
 
 def update_filtergenotypes(account_id, region):
-    path = os.path.join(GRIDS_DIR, 'FilterGenotypes.json')
-    if not os.path.exists(path):
-        print(f"FilterGenotypes.json not found at {path} — skipping")
+    # The file has lived under two layouts across versions; check both.
+    candidates = [
+        os.path.join(CONFIG_DIR, 'templates', 'FilterGenotypes.json'),
+        os.path.join(GRIDS_DIR, 'FilterGenotypes.json'),
+    ]
+    path = next((p for p in candidates if os.path.exists(p)), None)
+    if path is None:
+        print(f"FilterGenotypes.json not found in {candidates} — skipping")
         return
     with open(path) as f:
         data = json.load(f)
 
-    new_registry = f"{account_id}.dkr.ecr.{region}.amazonaws.com"
+    # The gatk_docker override should reference a docker_images.json key via
+    # {{docker:...}} (resolved at runtime by parameter_builder), NOT a hardcoded
+    # ECR URI — that keeps account/region out of this file entirely. If we find a
+    # legacy hardcoded URI, migrate it to the canonical reference.
     opt = data.get('optional_params', {})
-    if 'gatk_docker' in opt:
-        opt['gatk_docker'] = re.sub(
-            r'\d{12}\.dkr\.ecr\.[a-z0-9-]+\.amazonaws\.com',
-            new_registry, opt['gatk_docker']
-        )
+    val = opt.get('gatk_docker')
+    if isinstance(val, str) and ECR_REGISTRY_RE.search(val):
+        opt['gatk_docker'] = '{{docker:gq_recalibrator_docker}}'
         with open(path, 'w') as f:
             json.dump(data, f, indent=2)
-        print(f"FilterGenotypes.json: rewrote gatk_docker override -> {new_registry}")
+        print(f"FilterGenotypes.json ({path}): migrated hardcoded gatk_docker "
+              f"override -> {{{{docker:gq_recalibrator_docker}}}}")
+    else:
+        print("FilterGenotypes.json: gatk_docker override already uses a "
+              "docker-key reference (no ECR URI to rewrite)")
 
 
 def patch_template():
@@ -151,15 +209,15 @@ def main():
     ap.add_argument('--region', default='ap-southeast-1')
     ap.add_argument('--ref-bucket', required=True)
     ap.add_argument('--ref-prefix', default='genome/gatk-sv')
-    ap.add_argument('--old-ref-bucket', default='',
-                    help='Existing bucket in the config to replace (leave empty to rely on docker regex only)')
-    ap.add_argument('--old-ref-prefix', default='genome/gatk-sv')
+    ap.add_argument('--no-from-template', dest='from_template', action='store_false',
+                    help='Patch the existing config files in place instead of '
+                         'regenerating them from the setup/ templates')
     ap.add_argument('--patch-template', action='store_true',
                     help='Strip AllowedValues constraints from template.yaml')
     args = ap.parse_args()
 
-    update_docker_images(args.account_id, args.region)
-    update_genome_references(args.ref_bucket, args.ref_prefix, args.old_ref_bucket, args.old_ref_prefix)
+    update_docker_images(args.account_id, args.region, args.from_template)
+    update_genome_references(args.ref_bucket, args.ref_prefix, args.from_template)
     update_filtergenotypes(args.account_id, args.region)
     if args.patch_template:
         patch_template()

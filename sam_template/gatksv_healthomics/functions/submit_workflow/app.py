@@ -18,11 +18,13 @@ SCHEDULER_ROLE_ARN = os.environ.get('SCHEDULER_ROLE_ARN', '')
 OUTPUT_BUCKET = os.environ.get('OUTPUT_BUCKET', '<your-bucket>')
 OUTPUT_PREFIX = os.environ.get('OUTPUT_PREFIX', 'healthomics_test/test_output')
 PARAMETER_PREFIX = os.environ.get('PARAMETER_PREFIX', 'healthomics_input')
+AGGREGATES_TABLE_NAME = os.environ.get('AGGREGATES_TABLE_NAME', '')
 
 omics = boto3.client('omics')
 sns = boto3.client('sns')
 scheduler = boto3.client('scheduler')
 s3 = boto3.client('s3')
+dynamodb = boto3.resource('dynamodb')
 
 ROLE = HEALTHOMICS_ROLE_ARN  # backward compat
 DOCKER_IMAGES = get_docker_images()
@@ -244,12 +246,12 @@ def lambda_handler(event, context):
                 }
             else:
                 print(f"Max retries ({MAX_RETRIES}) exceeded for {sample_id}")
-                publish_failure(sample_id, workflow_event, f"Max retries exceeded: {str(e)}")
+                publish_failure(sample_id, workflow_event, f"Max retries exceeded: {str(e)}", batch_id=batch_id, gender=gender)
                 raise
         else:
             # Non-throttling error
             print(f"Error: {str(e)}")
-            publish_failure(sample_id, workflow_event, str(e))
+            publish_failure(sample_id, workflow_event, str(e), batch_id=batch_id, gender=gender)
             raise
 
 def submit_with_retry(workflow_id, workflow_version, workflow_stage, sample_id, 
@@ -381,6 +383,43 @@ def schedule_retry(sample_id, workflow_stage, retry_count, backoff_seconds, batc
         MessageDeduplicationId=f"{sample_id}-{workflow_stage}-retry-{retry_count}"
     )
 
+def increment_batch_failed_counter(sample_id, workflow_stage, batch_id):
+    """Atomically increment Count_Failed_Entities on the batch's aggregates record
+    for a submit-time failure (start_run rejected, so no HealthOmics run event will
+    ever fire the status monitor). Mirrors the status monitor's failure counting
+    (ADD Count_Failed_Entities :inc, keyed by {pk: BATCH#..., Event: <stage>}).
+
+    Only applies to GatherSampleEvidence sample-level failures — that is the stage
+    whose batch record counts per-sample completed/failed entities.
+    """
+    if workflow_stage != 'GatherSampleEvidence':
+        return
+    if not batch_id or batch_id == 'UNKNOWN':
+        print(f"  Cannot increment batch failed counter: no valid batch_id for {sample_id}")
+        return
+    if not AGGREGATES_TABLE_NAME:
+        print("  AGGREGATES_TABLE_NAME not set; skipping batch failed counter")
+        return
+    try:
+        aggregates_table = dynamodb.Table(AGGREGATES_TABLE_NAME)
+        aggregates_table.update_item(
+            Key={'pk': f'BATCH#{batch_id}', 'Event': workflow_stage},
+            UpdateExpression=('ADD Count_Failed_Entities :inc, failed_entities :sid_set '
+                              'SET last_updated = :ts'),
+            ExpressionAttributeValues={
+                ':inc': 1,
+                ':sid_set': {sample_id},
+                ':ts': datetime.datetime.now(datetime.UTC).isoformat(),
+            },
+        )
+        print(f"  Incremented Count_Failed_Entities on BATCH#{batch_id} "
+              f"(submit-time failure of {sample_id})")
+    except Exception as e:
+        # Don't mask the original submit failure if the counter write fails.
+        print(f"  WARNING: failed to increment batch failed counter for "
+              f"{sample_id} / BATCH#{batch_id}: {e}")
+
+
 def publish_failure(sample_id, workflow_stage, error_message, batch_id=None, gender=None, cram_path=None):
     """Publish failure notification"""
     timestamp = datetime.datetime.now(datetime.UTC)
@@ -398,6 +437,11 @@ def publish_failure(sample_id, workflow_stage, error_message, batch_id=None, gen
         MessageGroupId=sample_id,
         MessageDeduplicationId=f"{sample_id}-{workflow_stage}-error-{int(timestamp.timestamp())}"
     )
+
+    # A submit-time failure means no HealthOmics run was created, so the status
+    # monitor will never fire to count this failure against the batch. Increment
+    # the batch's failed counter here so batch accounting stays accurate.
+    increment_batch_failed_counter(sample_id, workflow_stage, batch_id)
 
 def write_parameters_to_s3(sample_id, workflow_stage, parameters, retry_count):
     """Write parameters JSON to S3 for audit trail"""

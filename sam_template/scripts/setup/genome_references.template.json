@@ -1,0 +1,121 @@
+{
+  "_comment": "GATK-SV genome reference S3 paths. Point of reference for 08_update_configs.py. Replace <your-bucket>/<ref-prefix> via 08 (--ref-bucket/--ref-prefix). Non-s3 values (reference_build, chr_x, populations, external_af_ref_prefix) are literals kept as-is.",
+  "reference_fasta": "s3://<your-bucket>/<ref-prefix>/Homo_sapiens_assembly38.fasta",
+  "reference_index": "s3://<your-bucket>/<ref-prefix>/Homo_sapiens_assembly38.fasta.fai",
+  "reference_fasta_fai": "s3://<your-bucket>/<ref-prefix>/Homo_sapiens_assembly38.fasta.fai",
+  "reference_dict": "s3://<your-bucket>/<ref-prefix>/Homo_sapiens_assembly38.dict",
+  "ref_dict": "s3://<your-bucket>/<ref-prefix>/Homo_sapiens_assembly38.dict",
+  "reference_bwa_alt": "s3://<your-bucket>/<ref-prefix>/Homo_sapiens_assembly38.fasta.64.alt",
+  "reference_bwa_amb": "s3://<your-bucket>/<ref-prefix>/Homo_sapiens_assembly38.fasta.64.amb",
+  "reference_bwa_ann": "s3://<your-bucket>/<ref-prefix>/Homo_sapiens_assembly38.fasta.64.ann",
+  "reference_bwa_bwt": "s3://<your-bucket>/<ref-prefix>/Homo_sapiens_assembly38.fasta.64.bwt",
+  "reference_bwa_pac": "s3://<your-bucket>/<ref-prefix>/Homo_sapiens_assembly38.fasta.64.pac",
+  "reference_bwa_sa": "s3://<your-bucket>/<ref-prefix>/Homo_sapiens_assembly38.fasta.64.sa",
+  "primary_contigs_list": "s3://<your-bucket>/<ref-prefix>/primary_contigs.list",
+  "primary_contigs_fai": "s3://<your-bucket>/<ref-prefix>/contig.fai",
+  "genome_file": "s3://<your-bucket>/<ref-prefix>/hg38.genome",
+  "preprocessed_intervals": "s3://<your-bucket>/<ref-prefix>/preprocessed_intervals.interval_list",
+  "manta_region_bed": "s3://<your-bucket>/<ref-prefix>/primary_contigs_plus_mito.bed.gz",
+  "manta_region_bed_index": "s3://<your-bucket>/<ref-prefix>/primary_contigs_plus_mito.bed.gz.tbi",
+  "mei_bed": "s3://<your-bucket>/<ref-prefix>/hg38.repeatmasker.mei.with_SVA.pad_50_merged.bed.gz",
+  "wgd_scoring_mask": "s3://<your-bucket>/<ref-prefix>/wgd_scoring_mask.hg38.gnomad_v3.bed",
+  "contig_ploidy_priors": "s3://<your-bucket>/<ref-prefix>/hg38.contig_ploidy_priors_homo_sapiens.tsv",
+  "exclude_intervals_cnv": "s3://<your-bucket>/<ref-prefix>/hg38.wgs.blacklist.wPAR.bed",
+  "exclude_intervals_for_filter_intervals_cnv": "s3://<your-bucket>/<ref-prefix>/hg38.wgs.blacklist.wPAR.bed",
+  "exclude_intervals_for_filter_intervals_ploidy": "s3://<your-bucket>/<ref-prefix>/hg38.wgs.blacklist.wPAR.bed",
+  "sd_locs_vcf": "s3://<your-bucket>/<ref-prefix>/Homo_sapiens_assembly38.dbsnp138.vcf",
+  "cytoband": "s3://<your-bucket>/<ref-prefix>/cytobands_hg38.bed.gz",
+  "cytoband_idx": "s3://<your-bucket>/<ref-prefix>/cytobands_hg38.bed.gz.tbi",
+  "cytobands": "s3://<your-bucket>/<ref-prefix>/cytobands_hg38.bed.gz",
+  "cytobands_idx": "s3://<your-bucket>/<ref-prefix>/cytobands_hg38.bed.gz.tbi",
+  "cnmops_chrom_file": "s3://<your-bucket>/<ref-prefix>/autosome.fai",
+  "cnmops_allo_file": "s3://<your-bucket>/<ref-prefix>/allosome.fai",
+  "allosome_fai": "s3://<your-bucket>/<ref-prefix>/allosome.fai",
+  "autosome_contigs": "s3://<your-bucket>/<ref-prefix>/autosome.fai",
+  "allosome_contigs": "s3://<your-bucket>/<ref-prefix>/allosome.fai",
+  "gq_recalibrator_model_file": "s3://<your-bucket>/<ref-prefix>/gatk-sv-recalibrator.aou_phase_1.v1.model",
+  "genome_tracks": [
+    "s3://<your-bucket>/<ref-prefix>/hg38-RepeatMasker.bed.gz",
+    "s3://<your-bucket>/<ref-prefix>/hg38-Segmental-Dups.bed.gz",
+    "s3://<your-bucket>/<ref-prefix>/hg38-Simple-Repeats.bed.gz",
+    "s3://<your-bucket>/<ref-prefix>/hg38_umap_s100.bed.gz",
+    "s3://<your-bucket>/<ref-prefix>/hg38_umap_s24.bed.gz"
+  ],
+  "site_level_comparison_datasets": [
+    [
+      "CCDG_abel",
+      "s3://<your-bucket>/<ref-prefix>/CCDG_Abel"
+    ],
+    [
+      "gnomAD_v2_Collins",
+      "s3://<your-bucket>/<ref-prefix>/gnomAD_v2_Collins"
+    ],
+    [
+      "HGSV_ByrskaBishop",
+      "s3://<your-bucket>/<ref-prefix>/HGSV_ByrskaBishop_GATKSV"
+    ],
+    [
+      "1000G_Sudmant",
+      "s3://<your-bucket>/<ref-prefix>/1000G_Sudmant"
+    ]
+  ],
+  "cnmops_exclude_list": "s3://<your-bucket>/<ref-prefix>/GRCh38_Nmask.bed",
+  "melt_std_vcf_header": "s3://<your-bucket>/<ref-prefix>/melt_standard_vcf_header.txt",
+  "wham_include_list_bed_file": "s3://<your-bucket>/<ref-prefix>/wham_whitelist.bed",
+  "par_bed": "s3://<your-bucket>/<ref-prefix>/hg38.par.bed",
+  "noncoding_bed": "s3://<your-bucket>/<ref-prefix>/noncoding.sort.hg38.bed",
+  "intron_reference": "s3://<your-bucket>/<ref-prefix>/gencode.v39.CDS.intron.tsv.gz",
+  "HERVK_reference": "s3://<your-bucket>/<ref-prefix>/HERVK.sorted.bed.gz",
+  "LINE1_reference": "s3://<your-bucket>/<ref-prefix>/LINE1.sorted.bed.gz",
+  "external_af_ref_bed": "s3://<your-bucket>/<ref-prefix>/gnomad_v4_SV.Freq.tsv.gz",
+  "external_af_ref_prefix": "gnomad_v4.1_sv",
+  "external_af_population": [
+    "ALL",
+    "AFR",
+    "AMR",
+    "EAS",
+    "EUR",
+    "MID",
+    "FIN",
+    "ASJ",
+    "RMI",
+    "SAS",
+    "AMI"
+  ],
+  "protein_coding_gtf": "s3://<your-bucket>/<ref-prefix>/gencode.v47.basic.protein_coding.canonical.gtf",
+  "depth_exclude_intervals": "s3://<your-bucket>/<ref-prefix>/depth_blacklist.sorted.bed.gz",
+  "depth_exclude_intervals_idx": "s3://<your-bucket>/<ref-prefix>/depth_blacklist.sorted.bed.gz.tbi",
+  "pesr_exclude_intervals": "s3://<your-bucket>/<ref-prefix>/PESR.encode.peri_all.repeats.delly.hg38.blacklist.sorted.bed.gz",
+  "pesr_exclude_intervals_idx": "s3://<your-bucket>/<ref-prefix>/PESR.encode.peri_all.repeats.delly.hg38.blacklist.sorted.bed.gz.tbi",
+  "pesr_exclude_list": "s3://<your-bucket>/<ref-prefix>/PESR.encode.peri_all.repeats.delly.hg38.blacklist.sorted.bed.gz",
+  "bin_exclude": "s3://<your-bucket>/<ref-prefix>/bin_exclude.hg38.gatkcov.bed.gz",
+  "bin_exclude_idx": "s3://<your-bucket>/<ref-prefix>/bin_exclude.hg38.gatkcov.bed.gz.tbi",
+  "seed_cutoffs": "s3://<your-bucket>/<ref-prefix>/seed_cutoff.txt",
+  "sl_cutoff_table": "s3://<your-bucket>/<ref-prefix>/baseline_sl_cutoffs.tsv",
+  "reference_build": "hg38",
+  "contig_list": "s3://<your-bucket>/<ref-prefix>/primary_contigs.list",
+  "chr_x": "chrX",
+  "chr_y": "chrY",
+  "rmsk": "s3://<your-bucket>/<ref-prefix>/hg38.randomForest_blacklist.withRepMask.bed.gz",
+  "segdups": "s3://<your-bucket>/<ref-prefix>/hg38.SD_gaps_Cen_Tel_Heter_Satellite_lumpy.blacklist.sorted.merged.bed.gz",
+  "allosomal_contigs": [
+    "chrX",
+    "chrY"
+  ],
+  "track_bed_files": [
+    "s3://<your-bucket>/<ref-prefix>/hg38.SimpRep.sorted.pad_100.merged.bed",
+    "s3://<your-bucket>/<ref-prefix>/hg38.SegDup.sorted.merged.bed",
+    "s3://<your-bucket>/<ref-prefix>/hg38.RM.sorted.merged.bed"
+  ],
+  "track_names": [
+    "SR",
+    "SD",
+    "RM"
+  ],
+  "pe_exclude_list": "s3://<your-bucket>/<ref-prefix>/PESR.encode.peri_all.repeats.delly.hg38.blacklist.sorted.bed.gz",
+  "pe_exclude_list_idx": "s3://<your-bucket>/<ref-prefix>/PESR.encode.peri_all.repeats.delly.hg38.blacklist.sorted.bed.gz.tbi",
+  "clustering_config_part1": "s3://<your-bucket>/<ref-prefix>/clustering_config.part_one.tsv",
+  "stratification_config_part1": "s3://<your-bucket>/<ref-prefix>/stratify_config.part_one.tsv",
+  "clustering_config_part2": "s3://<your-bucket>/<ref-prefix>/clustering_config.part_two.tsv",
+  "stratification_config_part2": "s3://<your-bucket>/<ref-prefix>/stratify_config.part_two.tsv"
+}

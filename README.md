@@ -200,3 +200,28 @@ Full detail (with the specific files touched): **[docs/HEALTHOMICS_WDL_ADAPTATIO
 
 Built on the Broad Institute's GATK-SV pipeline (v1.1.1). See the upstream repository for the pipeline's scientific documentation, WDL sources, and licensing:
 https://github.com/broadinstitute/gatk-sv/tree/v1.1.1
+
+The WDL workflows in `wdl/` are derived from GATK-SV and remain Copyright (c) 2009-2026,
+Broad Institute, Inc. — see `wdl/README.md`.
+
+---
+
+## Citation
+
+If you use this software, please cite the gnomAD-SV paper that describes the underlying
+GATK-SV method (as requested by the GATK-SV team):
+
+> Collins, R.L., Brand, H., Karczewski, K.J. et al. A structural variation reference for
+> medical and population genetics. *Nature* 581, 444–451 (2020).
+> https://doi.org/10.1038/s41586-020-2287-8
+
+See [CITATION.md](CITATION.md) for details.
+
+---
+
+## License
+
+This project is licensed under the **BSD 3-Clause License** (see [LICENSE.TXT](LICENSE.TXT)),
+the same license used by upstream GATK-SV. The WDL workflows in `wdl/` are derived from
+GATK-SV and retain the Broad Institute copyright; all other code (SAM stack, Lambdas,
+orchestration scripts, notebooks) is copyright the project authors under the same license.

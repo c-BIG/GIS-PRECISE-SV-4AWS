@@ -1,8 +1,13 @@
-# SAM CLI config for GATK-SV HealthOmics.
+# SAM CLI config TEMPLATE for GATK-SV HealthOmics.
 # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-config.html
 #
+# THIS IS THE COMMITTED TEMPLATE (placeholders only). The real samconfig.toml is
+# gitignored (it holds account-specific values). To create your working config:
+#   cp samconfig.toml.template samconfig.toml
+# then fill in the <placeholder> values with those produced by scripts/setup/
+# (see SETUP_GUIDE.md). Never commit the filled samconfig.toml.
+#
 # parameter_overrides is written as a TOML array (one "Key=Value" per line) for readability.
-# Replace the placeholder values with those produced by scripts/setup/ (see SETUP_GUIDE.md).
 version = 0.1
 
 [default]

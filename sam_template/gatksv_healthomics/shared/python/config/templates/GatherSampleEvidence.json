@@ -29,8 +29,7 @@
     "wham_docker",
 	"manta_docker",
     "genomes_in_the_cloud_docker",
-    "cloud_sdk_docker",
-	"melt_docker"
+    "cloud_sdk_docker"
   ],
   "_disabled_docker_params": [
 	"melt_docker",

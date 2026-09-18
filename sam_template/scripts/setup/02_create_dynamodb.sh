@@ -16,15 +16,16 @@ AGG_TABLE="${PREFIX}-batch-cohort"
 
 create_table() {
     local table="$1"
+    local range_key="$2"   # sample table uses 'sk'; aggregates table uses 'Event'
     if aws dynamodb describe-table --table-name "$table" --profile "$PROFILE" --region "$REGION" >/dev/null 2>&1; then
         echo "Table ${table} already exists — skipping."
         return
     fi
-    echo "Creating table: ${table}"
+    echo "Creating table: ${table} (range key: ${range_key})"
     aws dynamodb create-table \
         --table-name "$table" \
-        --attribute-definitions AttributeName=pk,AttributeType=S AttributeName=sk,AttributeType=S \
-        --key-schema AttributeName=pk,KeyType=HASH AttributeName=sk,KeyType=RANGE \
+        --attribute-definitions AttributeName=pk,AttributeType=S "AttributeName=${range_key},AttributeType=S" \
+        --key-schema AttributeName=pk,KeyType=HASH "AttributeName=${range_key},KeyType=RANGE" \
         --billing-mode PAY_PER_REQUEST \
         --stream-specification StreamEnabled=true,StreamViewType=NEW_IMAGE \
         --profile "$PROFILE" --region "$REGION" >/dev/null
@@ -32,8 +33,12 @@ create_table() {
     echo "  ${table} ready."
 }
 
-create_table "$SAMPLE_TABLE"
-create_table "$AGG_TABLE"
+# Sample table uses 'sk' as the range key (METADATA, <stage>#... records).
+create_table "$SAMPLE_TABLE" "sk"
+# Aggregates (batch/cohort) table uses 'Event' as the range key — the HO code
+# (api/aggregates writer + stage_advancer/status_monitor/submit_* readers) all
+# key by {pk, Event}. Using 'sk' here breaks every PutItem to this table.
+create_table "$AGG_TABLE" "Event"
 
 echo ""
 echo "=========================================================="

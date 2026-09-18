@@ -18,7 +18,7 @@ Automation for deploying GATK-SV HealthOmics to a fresh account. See `../../../S
 | `01_create_buckets.sh` | Create S3 bucket | fast |
 | `02_create_dynamodb.sh` | Create sample + aggregates tables with streams | fast |
 | `03_setup_references.sh` | Download refs from Broad GCS → your S3 | slow (~10 GB) |
-| `04_mirror_dockers.py` | Mirror Broad v1.1.1 dockers → your ECR, `--write-config` | very slow |
+| `04_mirror_dockers.py` | Mirror Broad v1.1 dockers → your ECR, `--write-config` | very slow |
 | `05_build_awscli_layer.sh` | Publish AWS CLI Lambda layer | fast |
 | `06_create_ho_role.sh` | Create HealthOmics execution IAM role | fast |
 | `07_register_workflows.py` | Register WDL workflows → workflow_ids.json | slow |
@@ -31,11 +31,11 @@ Then `../sync_config_to_s3.sh` to push config to S3.
 ## Notes
 
 - **DynamoDB tables are NOT created by the SAM template** — step 2 is mandatory.
-- `04_mirror_dockers.py` fetches Broad's image list pinned to the **v1.1.1** tag. Pass `--source-config <path>` to mirror from a local dockers.json instead.
+- `04_mirror_dockers.py` fetches Broad's image list pinned to the **v1.1** tag. Pass `--source-config <path>` to mirror from a local dockers.json instead. (Note: this repo intentionally stays on v1.1, NOT v1.1.1.)
 - `08_update_configs.py --patch-template` strips `AllowedValues` constraints from account-specific parameters in `template.yaml` (backs up the original).
 - `manifest_reader_docker` (amazonlinux + aws cli) is AWS-specific, not in Broad's list — build from `../../dockerfile/dockerfile.awscli`.
 - Re-running any script is safe (idempotent — skips existing resources).
-- `docker_images.v1.1.1.template.json` is a reference of the expected config output (replace `<ACCOUNT>`/`<REGION>`).
+- `docker_images.v1.1.template.json` is a reference of the expected config output (replace `<ACCOUNT>`/`<REGION>`).
 
 ## Per-account values to collect for samconfig.toml
 

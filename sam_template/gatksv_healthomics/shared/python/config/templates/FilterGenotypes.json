@@ -11,7 +11,7 @@
     "sv_pipeline_docker",
     "sv_base_mini_docker",
     "linux_docker",
-	"gatk_docker",
+    "gatk_docker",
     "manifest_reader_docker"
   ],
   "dynamic_params": {
@@ -23,7 +23,13 @@
   },
   "optional_params": {
     "sl_filter_args": "--small-del-threshold 93 --medium-del-threshold 150 --small-dup-threshold -51 --medium-dup-threshold -4 --ins-threshold -13 --inv-threshold -19",
-    "recalibrate_gq_args": ["--keep-homvar false", "--keep-homref true", "--keep-multiallelic true", "--skip-genotype-filtering true", "--min-samples-to-estimate-allele-frequency -1"],
-	"gatk_docker": "<ACCOUNT>.dkr.ecr.<REGION>.amazonaws.com/gatk-sv/gatk:mw-tb-form-sv-filter-training-data-eb62a3"
+    "recalibrate_gq_args": [
+      "--keep-homvar false",
+      "--keep-homref true",
+      "--keep-multiallelic true",
+      "--skip-genotype-filtering true",
+      "--min-samples-to-estimate-allele-frequency -1"
+    ],
+    "gatk_docker": "{{docker:gq_recalibrator_docker}}"
   }
 }

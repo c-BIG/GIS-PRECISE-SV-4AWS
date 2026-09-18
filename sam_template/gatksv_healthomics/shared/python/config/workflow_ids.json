@@ -1,38 +1,26 @@
 {
-  "GatherSampleEvidence_ORIGINAL": {
-    "id": "3955139",
-    "version": null
-  },
-  "GatherSampleEvidence_DRAGEN44_MELTv222": {
-    "id": "5247721",
-    "version": null
-  },
-  "GatherSampleEvidence_DRAGEN44_MELTv222_CollectSVEvidence8GB": {
-    "id": "7381936",
-    "version": null
-  },
   "GatherSampleEvidence": {
-    "id": "7381936",
+    "id": "7486046",
     "version": null
   },
   "EvidenceQC": {
-    "id": "3991202",
+    "id": "6431026",
     "version": null
   },
   "TrainGCNV": {
-    "id": "7500288",
+    "id": "3489134",
     "version": null
   },
   "GatherBatchEvidence": {
-    "id": "6324273",
+    "id": "6811786",
     "version": null
   },
   "ClusterBatch": {
-    "id": "6238049",
+    "id": "4960004",
     "version": null
   },
   "GenerateBatchMetrics": {
-    "id": "4548804",
+    "id": "9009385",
     "version": null
   },
   "FilterBatch": {
@@ -40,49 +28,49 @@
     "version": null
   },
   "FilterBatchSites": {
-    "id": "6397463",
+    "id": "9992864",
     "version": null,
     "note": "Same as FilterBatch"
   },
   "FilterBatchSamples": {
-    "id": "8807638",
+    "id": "1426500",
     "version": null,
     "note": "Same as FilterBatch"
   },
   "MergeBatchSites": {
-    "id": "4571309",
+    "id": "7737253",
     "version": null
   },
   "GenotypeBatch": {
-    "id": "4932051",
+    "id": "2208078",
     "version": null
   },
   "RegenotypeCNVs": {
-    "id": "7013143",
+    "id": "2531400",
     "version": null
   },
   "MakeCohortVcf": {
-    "id": "8156627",
+    "id": "6718373",
     "version": null
   },
   "RefineComplexVariants": {
-    "id": "4792008",
+    "id": "7775616",
     "version": null
   },
   "JoinRawCalls": {
-    "id": "8561886",
+    "id": "2545006",
     "version": null
   },
   "SVConcordance": {
-    "id": "1454155",
+    "id": "5308567",
     "version": null
   },
   "FilterGenotypes": {
-    "id": "5338731",
+    "id": "3699368",
     "version": null
   },
   "AnnotateVcf": {
-    "id": "6553914",
+    "id": "1138439",
     "version": null
   }
 }
