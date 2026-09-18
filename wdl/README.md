@@ -1,9 +1,9 @@
 # WDL Workflows
 
 These WDL workflows are derived from the Broad Institute's **GATK-SV** pipeline,
-pinned to the **v1.1.1** release:
+pinned to the **v1.1** release:
 
-https://github.com/broadinstitute/gatk-sv/tree/v1.1.1
+https://github.com/broadinstitute/gatk-sv/tree/v1.1
 
 They are **Copyright (c) 2009-2026, Broad Institute, Inc.** and licensed under the
 BSD 3-Clause License (see `../LICENSE.TXT`).

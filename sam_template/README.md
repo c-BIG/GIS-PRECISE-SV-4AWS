@@ -1,6 +1,6 @@
 # GATK-SV on AWS HealthOmics
 
-Serverless orchestration of the GATK-SV structural variant pipeline (v1.1.1) on AWS HealthOmics. Event-driven: DynamoDB Streams → EventBridge → Lambda → HealthOmics.
+Serverless orchestration of the GATK-SV structural variant pipeline (v1.1) on AWS HealthOmics. Event-driven: DynamoDB Streams → EventBridge → Lambda → HealthOmics.
 
 For first-time deployment to a new account, see **[../SETUP_GUIDE.md](../SETUP_GUIDE.md)**.
 
@@ -124,6 +124,6 @@ aws omics list-runs --region <region> --profile <profile>
 
 ## Notes
 
-- Based on **GATK-SV v1.1.1** — uses the stock Broad docker images (no custom rebuilds).
+- Based on **GATK-SV v1.1** — uses the stock Broad docker images (no custom rebuilds).
 - Submit Lambdas require the **AWS CLI Lambda layer** (`AwsCliLayerArn`) — see `lambda_layer/README.md`.
 - HealthOmics has a ~50KB workflow-parameter limit; the submit Lambda writes S3 manifests for large inputs (gated by `HealthOmicsJsonSizeLimit`).

@@ -1,6 +1,6 @@
 # GATK-SV on AWS — New Account Setup Guide
 
-This guide walks through deploying the GATK-SV HealthOmics pipeline (GATK-SV v1.1.1) in a **new AWS account** from scratch. It covers the parent stack and the HealthOmics compute backend.
+This guide walks through deploying the GATK-SV HealthOmics pipeline (GATK-SV v1.1) in a **new AWS account** from scratch. It covers the parent stack and the HealthOmics compute backend.
 
 ---
 
@@ -99,9 +99,9 @@ This downloads from the public GCS/HTTPS mirrors and uploads to `s3://<bucket>/<
 
 ## Step 5: Mirror Docker Images to ECR
 
-Source (pinned to stable **v1.1.1** tag): https://github.com/broadinstitute/gatk-sv/blob/v1.1.1/inputs/values/dockers.json
+Source (pinned to stable **v1.1** tag): https://github.com/broadinstitute/gatk-sv/blob/v1.1/inputs/values/dockers.json
 
-This repo targets **GATK-SV v1.1.1**. All images are stock Broad images — no custom rebuilds needed. Broad's images are on public registries (us.gcr.io, marketplace.gcr.io) which AWS HealthOmics cannot pull from directly, so mirror them to your ECR.
+This repo targets **GATK-SV v1.1**. All images are stock Broad images — no custom rebuilds needed. Broad's images are on public registries (us.gcr.io, marketplace.gcr.io) which AWS HealthOmics cannot pull from directly, so mirror them to your ECR.
 
 ```bash
 python3 scripts/setup/04_mirror_dockers.py \
@@ -112,7 +112,7 @@ python3 scripts/setup/04_mirror_dockers.py \
 ```
 
 This:
-1. Fetches Broad's `dockers.json` pinned to `v1.1.1` (do NOT use `main` — it moves)
+1. Fetches Broad's `dockers.json` pinned to `v1.1` (do NOT use `main` — it moves)
 2. Creates ECR repos, pulls/retags/pushes each image
 3. With `--write-config`, regenerates `docker_images.json` pointing at your ECR
 
@@ -122,7 +122,7 @@ docker build -t <ecr>/gatk-sv/awscli:v2.34.25 -f dockerfile/dockerfile.awscli .
 docker push <ecr>/gatk-sv/awscli:v2.34.25
 ```
 
-A reference of the expected config is at `scripts/setup/docker_images.v1.1.1.template.json`.
+A reference of the expected config is at `scripts/setup/docker_images.v1.1.template.json`.
 
 ---
 
@@ -154,7 +154,7 @@ Note the role ARN → set `HealthOmicsExecutionRole` in samconfig.toml.
 
 ## Step 8: Register WDL Workflows in HealthOmics
 
-Source: `wdl/` folder in this repo — GATK-SV v1.1.1 HealthOmics-compliant WDLs.
+Source: `wdl/` folder in this repo — GATK-SV v1.1 HealthOmics-compliant WDLs.
 
 Each pipeline stage is a separate HealthOmics workflow. Register them and collect the workflow IDs.
 

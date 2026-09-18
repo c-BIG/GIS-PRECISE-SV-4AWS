@@ -1,7 +1,7 @@
 # HealthOmics WDL Adaptations
 
 Reference for anyone taking the WDLs in `wdl/` and running them on AWS HealthOmics with
-their own orchestration. These are the changes made to the Broad GATK-SV v1.1.1 WDLs so
+their own orchestration. These are the changes made to the Broad GATK-SV v1.1 WDLs so
 they run correctly on the HealthOmics WDL engine (which differs from Cromwell/Terra).
 
 If you use the full `sam_template/` stack, all of this is already handled — this doc is
@@ -89,7 +89,7 @@ Python `json.dump(0.000001)` → `1e-06`, which the HealthOmics WDL engine rejec
 
 ## Minimal "just the WDLs" checklist
 
-1. Mirror Broad v1.1.1 Docker images to your ECR (see `scripts/setup/04_mirror_dockers.py`)
+1. Mirror Broad v1.1 Docker images to your ECR (see `scripts/setup/04_mirror_dockers.py`)
    and set the ECR pull policy for `omics.amazonaws.com`.
 2. Mirror the reference files to S3 (see `scripts/setup/03_setup_references.sh`).
 3. Build the AWS-CLI manifest-reader image (`dockerfile/dockerfile.awscli`).

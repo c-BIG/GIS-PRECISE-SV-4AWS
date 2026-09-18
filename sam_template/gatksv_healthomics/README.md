@@ -53,7 +53,7 @@ gatksv_healthomics/
 |------|----------|
 | `workflow_ids.json` | `{ "<Stage>": { "id": "<workflow-id>", "version": null } }` |
 | `genome_references.json` | Reference file → S3 path map |
-| `docker_images.json` | Docker key → ECR URI (GATK-SV v1.1.1 images) |
+| `docker_images.json` | Docker key → ECR URI (GATK-SV v1.1 images) |
 | `templates/<Stage>.json` | `static_params` / `docker_params` / `dynamic_params` / `optional_params` |
 
 Template dynamic-param query syntax (resolved at runtime from DDB), e.g.:
@@ -79,4 +79,4 @@ Submit Lambdas need the **AWS CLI Lambda layer** (`AwsCliLayerArn`) — they she
 - **Cache**: submit Lambdas use `CACHE_ALWAYS` with `HealthOmicsCacheId`. Change the cache ID to force fresh execution after WDL fixes.
 - **Parameter size**: HealthOmics has a ~50KB run-parameter limit. When the built JSON exceeds `HealthOmicsJsonSizeLimit`, the Lambda writes file manifests to S3 instead of inline arrays.
 - **FilterBatch split**: `FilterBatchSites` (auto) and `FilterBatchSamples` (manual QC gate) are separate stages/workflows.
-- **GATK-SV v1.1.1**: uses stock Broad docker images.
+- **GATK-SV v1.1**: uses stock Broad docker images.
