@@ -1,11 +1,44 @@
-BSD 3-Clause License
+Copyright (c), GENOME INSTITUTE OF SINGAPORE, A*STAR RESEARCH ENTITIES (Co. Registration No.: 199702110H), hereinafter referred to as “GIS”. All rights reserved. 
 
-Copyright (c) 2026, Genome Institute of Singapore (GIS), Agency for Science,
-Technology and Research (A*STAR), and Precision Health Research, Singapore (PRECISE).
-All rights reserved.
+“Software” means the source code, object code, executable files, scripts, workflows, documentation and other materials made available by the GIS under this license, which includes Third-Party Software (as defined below) identified in Annex A.
+1.	Third-Party Software. 
+The Software incorporates or is derived from certain software developed by Broad Institute, Inc (“Third-Party Software”). Such Third-Party Software remains subject to its applicable licence terms and is provided entirely at the licensee's risk. The applicable Broad Institute copyright notice, licence conditions, and disclaimer are reproduced in Annex A and are incorporated into this license by reference. The Software remains subject to the terms set out in Annex A and this license.
 
-Portions of this software are derived from GATK-SV
-(https://github.com/broadinstitute/gatk-sv),
+2.	Redistribution and Use. 
+Redistribution and use of the Software in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+a.	Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+b.	Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+c.	Neither the name of the GIS nor the names of its contributors may be used to endorse or promote products derived from the Software without specific prior written permission.
+
+3.	Limitations of Use
+The Software is not intended for clinical use, diagnostic use, patient management, medical decision-making, regulatory submissions, or any other purpose requiring regulatory approval, validation or certification. The licensee is solely responsible for determining whether the Software is suitable for its intended use.
+
+4.	Warranties and Liabilities
+
+4.1	Use of the Software is at the licensee's or user’s sole risk. The licensee or users assumes full responsibility for the selection, installation, use, operation, results obtained from, and any consequences arising from the Software and shall fully indemnify GIS for any losses, costs, expenses, damages or penalties incurred by GIS, whether directly or indirectly as a consequence of such licensee’s or user’s use, modification or distribution of the Software. GIS makes no representations, conditions or warranties, whether express, implied or statutory, in relation to the Software or any Third-Party Software or any information or materials supplied with it. Without limiting the generality of the foregoing, GIS expressly disclaims any warranty, condition or representation that the Software and the Third-Party Software:
+a.	will correspond with any description or specification;
+b.	are of merchantable or satisfactory quality;
+c.	are fit for any particular purpose;
+d.	are accurate, complete or reliable or
+e.	will be durable, uninterrupted, error-free, secure or free from harmful components.
+f.	will be compatible or suitable for use on AWS HealthOmics.
+
+4.2	 Nothing in this licence shall be construed as:
+a.	A warranty by GIS that the Software or the Third-Party Software, or its use, modification, distribution or other exploitation, is or will be free from infringement of any patent, copyright, trademark, industrial design or other intellectual property right of any third party; or
+b.	An obligation on GIS to bring, prosecute or defend any action or proceeding against or by a third-party concerning infringement of any patent, copyright, trademark, industrial design, other intellectual property right or contractual right arising from or relating to the Software.
+
+4.3	No action, whether in contract, tort (including negligence) or otherwise, arising out of or in connection with this licence or the Software may be brought against GIS more than three (3) years after the cause of action accrued.
+
+4.4	To the fullest extent permitted by law, GIS shall not be liable to any licensee or third party, whether in contract, tort (including negligence), breach of statutory duty or otherwise, for any direct, indirect, special, incidental or consequential loss or damage, loss of profits, loss of revenue, loss of data, loss of use, loss of business opportunity or pure economic loss arising out of or in connection with this licence or the Software.
+
+4.5	 Notwithstanding anything to the contrary in this licence and to the fullest extent permitted by law, GIS’s total cumulative liability arising out of or in connection with this licence or the Software, however arising, shall not exceed Singapore Dollars One Dollar (S$1).
+
+5.	Governing Law. 
+This licence and any dispute or claim arising out of or in connection with it or the Software shall be governed by and construed in accordance with the laws of Singapore. Each licensee irrevocably submits to the exclusive jurisdiction of the courts of Singapore.
+
+Annex A
+Broad Institute BSD-3 Clause Licence
+
 Copyright (c) 2009-2026, Broad Institute, Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -18,9 +51,9 @@ modification, are permitted provided that the following conditions are met:
   this list of conditions and the following disclaimer in the documentation
   and/or other materials provided with the distribution.
 
-* Neither the name of the copyright holder nor the names of its contributors
-  may be used to endorse or promote products derived from this software
-  without specific prior written permission.
+* Neither the name Broad Institute, Inc. nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
