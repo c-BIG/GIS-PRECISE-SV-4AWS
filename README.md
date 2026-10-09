@@ -178,7 +178,7 @@ HealthOmics WDL engine (which differs from Cromwell/Terra in a few ways). The ma
   coercion.
 - **GCS removed** — GCS OAuth token export and `gsutil`/`gcloud` usage replaced with
   AWS-native equivalents (or a download task using an AWS-CLI image).
-- **~50KB parameter limit** — large sample arrays passed as an S3 manifest that a
+- **~250KB parameter limit** — large sample arrays passed as an S3 manifest that a
   `ReadManifest` task downloads at runtime.
 - Misc: `gz` gunzip symlink fix, `write_tsv()` output path, float serialization at submit.
 
@@ -192,7 +192,7 @@ Full detail (with the specific files touched): **[docs/HEALTHOMICS_WDL_ADAPTATIO
 
 - Based on **GATK-SV v1.1** — uses the stock Broad Docker images (no custom rebuilds).
 - Compute backend is HealthOmics only.
-- HealthOmics has a ~50KB run-parameter limit; the submit Lambda writes S3 manifests for large inputs (gated by `HealthOmicsJsonSizeLimit`).
+- HealthOmics has a ~250KB run-parameter limit; the submit Lambda writes S3 manifests for large inputs (gated by `HealthOmicsJsonSizeLimit`).
 
 ---
 
